@@ -55,5 +55,9 @@ ws.onmessage = (event) => {
 }
 
 ws.onclose = () => {
-    console.log("Client disconnected from server");
+    
+    if(username) return;
+
+    ws.send(JSON.stringify({ type: "system", message: `${username} left the chat.` }))
 }
+
