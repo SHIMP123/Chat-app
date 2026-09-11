@@ -15,11 +15,17 @@
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "pg": "^8.23.0",
+    "postgres": "^3.4.9",
     "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",
     "drizzle-kit": "^0.31.10",
     "nodemon": "^3.1.14"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true
   }
 }
