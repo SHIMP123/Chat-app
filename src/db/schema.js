@@ -1,11 +1,11 @@
 import {
-    pgtable,
+    pgTable,
     serial,
     text,
     timestamp
 } from "drizzle-orm/pg-core";
 
-export const messageSchema = pgtable("message", {
+export const messageSchema = pgTable("message", {
     id: serial("id").primaryKey(),
 
     username: text("username").notNull(),

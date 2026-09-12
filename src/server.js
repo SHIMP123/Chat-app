@@ -1,4 +1,6 @@
 import express from "express";
+import { db } from "./db/db.js";
+import { messageSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
 
 const app = express();
@@ -22,17 +24,18 @@ wss.on("connection", (ws) => {
 
     let username = "";
 
-    ws.on("message", (message) => {
+    ws.on("message", async(message) => {
         try{
-            console.log(`Recieved message: ${message.toString()}`);
 
             const data = JSON.parse(message.toString());
+            const messages = await db.select().from(messageSchema)
 
             if(data.type === "join"){
                 username = data.username
                 for(const client of wss.clients){
                     if(client.readyState === 1){
                         client.send(`${username} has entered the chat!`)
+                        console.log(messages)
                     }
                 }
             }
@@ -41,6 +44,11 @@ wss.on("connection", (ws) => {
                 if(data.username){
                     username = data.username;
                 }
+
+                await db.insert(messageSchema).values({
+                    username: username,
+                    content: data.message
+                })
 
                 for (const client of wss.clients) {
                     if(client.readyState === 1){
