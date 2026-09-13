@@ -2,12 +2,14 @@ import express from "express";
 import { db } from "./db/db.js";
 import { messageSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
+import messagesRouter from "./routes/messagesRouter.js"
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
 app.use(express.json());
 app.use(express.static("public"));
+app.use(messagesRouter)
 
 app.get("/", (req, res) => {
     res.send("Chat app is running");

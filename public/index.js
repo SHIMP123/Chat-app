@@ -8,6 +8,28 @@ const messages = document.getElementById("messages");
 
 let username = "";
 
+async function loadMessages() {
+    try{
+        const response = await fetch("/messages");
+
+        const data = await response.json();
+
+        for(const message of data.data){
+            const messageEl = document.createElement("p");
+
+            messageEl.textContent = `
+                ${message.username}: ${message.content}
+            `
+            messages.appendChild(messageEl);
+
+            messages.scrollTop = messages.scrollHeight;
+        }
+    }catch(e){
+        console.error(e)
+        ws.json({ type: "Error", message: "Resource not found." })
+    }
+}
+
 joinBtn.addEventListener("click", (e) => {
     e.preventDefault();
     if(username){
@@ -61,3 +83,4 @@ ws.onclose = () => {
     ws.send(JSON.stringify({ type: "system", message: `${username} left the chat.` }))
 }
 
+loadMessages();
