@@ -8,27 +8,68 @@ const messages = document.getElementById("messages");
 
 let username = "";
 
-async function loadMessages() {
+
+async function displayMessages(message){
     try{
-        const response = await fetch("/messages");
+        let html = "";
 
-        const data = await response.json();
-
-        for(const message of data.data){
-            const messageEl = document.createElement("p");
-
-            messageEl.textContent = `
-                ${message.username}: ${message.content}
+        if(message.type === "system"){
+            html = `
+                <div class="message-container">
+                    <p>${message.message}</p>
+                </div>
             `
-            messages.appendChild(messageEl);
-
-            messages.scrollTop = messages.scrollHeight;
         }
+
+        if(message.type === "message"){
+            html = `
+            <div class="message-container">
+                <p>${message.username}: ${message.content}</p>
+                <button class="options-btn">...</button>
+
+                <div class="menu-container hide">
+                    <button class="delete-button" data-id="${message.id}">
+                        ✖ Delete
+                    </button>
+                </div>
+            </div>
+        `
+        }
+
+        messages.innerHTML += html;
+
+        messages.scrollTop = messages.scrollHeight;
     }catch(e){
         console.error(e)
-        ws.json({ type: "Error", message: "Resource not found." })
+        ws.json({ type: "Error", message: "Resource not found." });
     }
 }
+
+async function loadMessages() {
+    const response = await fetch("/messages");
+
+    const data = await response.json();
+
+    for(const message of data.data){
+        displayMessages({
+            type: "message",
+            username: message.username,
+            content: message.content,
+            id: message.id
+        });
+    }
+}
+
+messages.addEventListener("click", (e) => {
+
+    if(e.target.classList.contains("delete-button")){
+        const id = e.target.dataset.id;
+
+        if(ws.readyState === WebSocket.OPEN){
+            ws.send(JSON.stringify({ type: "delete", id: id }));
+        }
+    }
+})
 
 joinBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -67,20 +108,8 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
 })
 
 ws.onmessage = (event) => {
-    const message = event.data;
-    const messageEl = document.createElement("p");
-
-    messageEl.textContent = message;
-    messages.appendChild(messageEl);
-
-    messages.scrollTop = messages.scrollHeight;
-}
-
-ws.onclose = () => {
-    
-    if(username) return;
-
-    ws.send(JSON.stringify({ type: "system", message: `${username} left the chat.` }))
+    const message = JSON.parse(event.data);
+    displayMessages(message);
 }
 
 loadMessages();
