@@ -23,12 +23,12 @@ async function displayMessages(message){
 
         if(message.type === "message"){
             html = `
-            <div class="message-container">
+            <div class="message-container" data-id="${message.id}">
                 <p>${message.username}: ${message.content}</p>
                 <button class="options-btn">...</button>
 
                 <div class="menu-container hide">
-                    <button class="delete-button" data-id="${message.id}">
+                    <button class="delete-button">
                         ✖ Delete
                     </button>
                 </div>
@@ -63,9 +63,10 @@ async function loadMessages() {
 messages.addEventListener("click", (e) => {
 
     if(e.target.classList.contains("delete-button")){
-        const id = e.target.dataset.id;
+        const messageContainer = e.target.closest(".message-container");
+        const id = messageContainer ? messageContainer.dataset.id : null;
 
-        if(ws.readyState === WebSocket.OPEN){
+        if(id && id !== "undefined" && ws.readyState === WebSocket.OPEN){
             ws.send(JSON.stringify({ type: "delete", id: id }));
         }
     }
@@ -109,7 +110,16 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
 
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    displayMessages(message);
+
+    if(message.type === "delete"){
+        const messageEl = document.querySelector(`[data-id='${message.id}']`);
+
+        if(messageEl){
+            messageEl.remove();
+        }   
+    }else{
+        displayMessages(message);
+    }
 }
 
 loadMessages();

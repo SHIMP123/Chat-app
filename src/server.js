@@ -62,15 +62,18 @@ wss.on("connection", (ws) => {
                     username = data.username;
                 }
 
-                await db.insert(messageSchema).values({
-                    username: username,
-                    content: data.message
-                })
+                const insertedMessage = await db.insert(messageSchema).values({
+                                        username: username,
+                                        content: data.message
+                                    }).returning();
+
+                console.log(insertedMessage);
 
                 for (const client of wss.clients) {
                     if(client.readyState === 1){
                         client.send(JSON.stringify({
                             type: "message",
+                            id: insertedMessage[0].id,
                             username: username,
                             content: data.message
                         }));
@@ -79,7 +82,22 @@ wss.on("connection", (ws) => {
             }
 
             if(data.type === "delete"){
-                await deleteMessage(data.id)
+                const deleted = await deleteMessage(Number(data.id))
+
+                if(isNaN(deleted)){
+                    console.error("Invalid message Id recieved: ", data.id)
+                }
+
+                console.log(deleted);
+
+                for(const client of wss.clients){
+                    if(client.readyState === 1){
+                        client.send(JSON.stringify({
+                            type: "delete",
+                            id: data.id
+                        }))
+                    }
+                }
             }
         }catch(e){
             console.error(`Failed to parse message: ${e.message}`)
