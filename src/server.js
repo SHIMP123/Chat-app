@@ -64,10 +64,9 @@ wss.on("connection", (ws) => {
 
                 const insertedMessage = await db.insert(messageSchema).values({
                                         username: username,
-                                        content: data.message
+                                        content: data.message,
+                                        replyTo: data.replyTo ? Number(data.replyTo) : null
                                     }).returning();
-
-                console.log(insertedMessage);
 
                 for (const client of wss.clients) {
                     if(client.readyState === 1){
@@ -75,7 +74,8 @@ wss.on("connection", (ws) => {
                             type: "message",
                             id: insertedMessage[0].id,
                             username: username,
-                            content: data.message
+                            content: data.message,
+                            replyTo: data.replyTo
                         }));
                     }
                 }

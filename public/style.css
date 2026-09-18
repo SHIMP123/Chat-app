@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
@@ -117,6 +118,7 @@ h1 {
         0 0 10px rgba(255,255,255,0.4),
         0 0 30px rgba(255,255,255,0.15);
 }
+
 /* =========================
    CHAT BOX
 ========================= */
@@ -140,6 +142,20 @@ h1 {
     box-shadow:
         0 0 30px rgba(255,255,255,0.04),
         inset 0 0 30px rgba(255,255,255,0.02);
+}
+
+/* =========================
+   MESSAGE CONTAINER
+========================= */
+
+.message-container {
+    position: relative;
+    margin-bottom: 15px;
+    padding: 5px;
+}
+
+.message-container p {
+    margin-bottom: 0;
 }
 
 /* Messages */
@@ -173,7 +189,139 @@ h1 {
     }
 }
 
-/* Scrollbar */
+/* =========================
+   OPTIONS BUTTON
+========================= */
+
+.options-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+
+    padding: 5px 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+
+    background: transparent;
+    color: #aaa;
+
+    font-size: 16px;
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+}
+
+.options-btn:hover {
+    background: #222;
+    color: white;
+
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+}
+
+/* =========================
+   MENU CONTAINER
+========================= */
+
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    position: absolute;
+    top: 40px;
+    right: 5px;
+
+    min-width: 130px;
+    padding: 8px;
+
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(15px);
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+
+    z-index: 10;
+}
+
+/* Hide menu */
+
+.hide {
+    display: none;
+}
+
+/* =========================
+   MENU BUTTONS
+========================= */
+
+.reply-button,
+.delete-button {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+
+    background: transparent;
+    color: #ddd;
+
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+}
+
+.reply-button:hover,
+.delete-button:hover {
+    background: #222;
+    color: white;
+
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Delete hover */
+
+.delete-button:hover {
+    color: #ff6b6b;
+
+    border-color: rgba(255, 107, 107, 0.4);
+}
+
+/* =========================
+   REPLY CONTAINER
+========================= */
+
+.reply-container {
+    max-width: 80%;
+
+    margin-bottom: 6px;
+    margin-left: 8px;
+    padding: 8px 12px;
+
+    background: rgba(255, 255, 255, 0.05);
+
+    border-left: 3px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+
+    color: #999;
+
+    font-size: 12px;
+    font-style: italic;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
 
 #messages::-webkit-scrollbar {
     width: 6px;

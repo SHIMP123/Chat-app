@@ -7,6 +7,7 @@ const joinBtn = document.getElementById("join-button");
 const messages = document.getElementById("messages");
 
 let username = "";
+let replyTo = null;
 
 
 async function displayMessages(message){
@@ -22,12 +23,39 @@ async function displayMessages(message){
         }
 
         if(message.type === "message"){
+
+            console.log("Message id: ",message.id)
+            console.log("Message Reply: ", message.replyTo)
+
+            let replyMsg = "";
+
+            if(message.replyTo){
+                const messageEl = document.querySelector(`.message-container[data-id="${message.replyTo}"]`);
+
+                if(messageEl){
+                    const parentParagraph = messageEl.querySelector("p");
+                    const parentText = parentParagraph ? parentParagraph.textContent : "Original text not found";
+
+                    replyMsg = parentText;
+                }
+            }
+
+            const reply = replyMsg ? `
+                        <div class="reply-container">
+                            ↩ ${replyMsg}
+                        </div>` : "";
+
             html = `
             <div class="message-container" data-id="${message.id}">
+                ${reply}
                 <p>${message.username}: ${message.content}</p>
                 <button class="options-btn">...</button>
 
                 <div class="menu-container hide">
+                    <button class="reply-button">
+                        ↩ Reply
+                    </button>
+
                     <button class="delete-button">
                         ✖ Delete
                     </button>
@@ -39,6 +67,8 @@ async function displayMessages(message){
         messages.innerHTML += html;
 
         messages.scrollTop = messages.scrollHeight;
+
+        console.log(message)
     }catch(e){
         console.error(e)
         ws.json({ type: "Error", message: "Resource not found." });
@@ -51,16 +81,30 @@ async function loadMessages() {
     const data = await response.json();
 
     for(const message of data.data){
-        displayMessages({
+        await displayMessages({
             type: "message",
             username: message.username,
             content: message.content,
-            id: message.id
+            id: message.id,
+            replyTo: message.replyTo
         });
     }
 }
 
 messages.addEventListener("click", (e) => {
+
+    if(e.target.classList.contains("options-btn")){
+        const messageContainer =  e.target.closest(".message-container");
+        const menu = messageContainer.querySelector(".menu-container");
+
+        document.querySelectorAll(".menu-container").forEach( items => {
+            if(items !== menu){
+                items.classList.add("hide");
+            }
+        })
+
+        menu.classList.toggle("hide");
+    }
 
     if(e.target.classList.contains("delete-button")){
         const messageContainer = e.target.closest(".message-container");
@@ -69,6 +113,14 @@ messages.addEventListener("click", (e) => {
         if(id && id !== "undefined" && ws.readyState === WebSocket.OPEN){
             ws.send(JSON.stringify({ type: "delete", id: id }));
         }
+    }
+
+    if(e.target.classList.contains("reply-button")){
+        const messageContainer = e.target.closest(".message-container");
+        const id = messageContainer ? messageContainer.dataset.id : null;
+
+        replyTo = id;
+        console.log(replyTo);
     }
 })
 
@@ -102,7 +154,13 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
     if(!message) return;
 
     if(ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({type: "message", username: username, message: message}));
+        ws.send(JSON.stringify({
+            type: "message", 
+            username: username, 
+            message: message,
+            replyTo: replyTo
+        }));
+        
         messageInput.value = "";
     }
     
