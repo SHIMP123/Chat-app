@@ -8,6 +8,7 @@ const messages = document.getElementById("messages");
 
 let username = "";
 let replyTo = null;
+let currentlyEditing = null;
 
 
 async function displayMessages(message){
@@ -48,12 +49,23 @@ async function displayMessages(message){
             html = `
             <div class="message-container" data-id="${message.id}">
                 ${reply}
-                <p>${message.username}: ${message.content}</p>
+                <div class="message-header">
+                    <span class="message-username">
+                        ${message.username}
+                    </span>
+                </div>
+                <p class="message-content">
+                    ${message.content}
+                </p>
                 <button class="options-btn">...</button>
 
                 <div class="menu-container hide">
                     <button class="reply-button">
                         ↩ Reply
+                    </button>
+
+                    <button class="edit-button">
+                        ✒ Edit
                     </button>
 
                     <button class="delete-button">
@@ -122,6 +134,27 @@ messages.addEventListener("click", (e) => {
         replyTo = id;
         console.log(replyTo);
     }
+
+    //WORK ON THIS
+    if(e.target.classList.contains("edit-button")){
+        const messageContainer = e.target.closest(".message-container");
+
+        const id = messageContainer ? messageContainer.dataset.id : null;
+
+        const messageContent = messageContainer.querySelector(".message-content");
+
+        const content = messageContent.textContent;
+
+        currentlyEditing = id;
+
+        messageInput.value = content;
+
+        sendButton.textContent = currentlyEditing ? "Save" : "Send";
+
+        messageInput.focus();
+
+        console.log("Editing message: ", currentlyEditing)
+    }
 })
 
 joinBtn.addEventListener("click", (e) => {
@@ -152,6 +185,20 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
     const message = messageInput.value.trim();
 
     if(!message) return;
+    if(ws.readyState !== WebSocket.OPEN) return;
+
+    if(currentlyEditing){
+        ws.send(JSON.stringify({
+            type: "edit",
+            editId: currentlyEditing,
+            content: message,
+        }))
+
+        messageInput.value = "";
+        currentlyEditing = null;
+
+        return;
+    }
 
     if(ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -175,6 +222,16 @@ ws.onmessage = (event) => {
         if(messageEl){
             messageEl.remove();
         }   
+    }else if(message.type === "edited"){
+        const messageEl = document.querySelector(`[data-id='${message.id}']`);
+
+        if(messageEl){
+            const messageContent = messageEl.querySelector(".message-content");
+
+            messageContent.textContent = `
+                ${message.content}
+            `
+        }  
     }else{
         displayMessages(message);
     }

@@ -16,6 +16,22 @@ async function deleteMessage(messageId){
     }
 } 
 
+async function editing(messageId, content){
+    try{
+        const updatedMsg = await db.update(messageSchema)
+                                    .set({
+                                        content: content,
+                                    })
+                                    .where(eq(messageSchema.id, messageId))
+                                    .returning();;
+        console.log(updatedMsg);
+        
+        return updatedMsg;
+    }catch(e){
+        console.error("Error editing msg: ", e)
+    }
+}
+
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -84,7 +100,7 @@ wss.on("connection", (ws) => {
             if(data.type === "delete"){
                 const deleted = await deleteMessage(Number(data.id))
 
-                if(isNaN(deleted)){
+                if(!deleted || deleted.length === 0){
                     console.error("Invalid message Id recieved: ", data.id)
                 }
 
@@ -96,6 +112,28 @@ wss.on("connection", (ws) => {
                             type: "delete",
                             id: data.id
                         }))
+                    }
+                }
+            }
+
+            if(data.type === "edit"){
+                const edited = await editing(Number(data.editId), data.content)
+
+                if(!edited || edited.length === 0){
+                    console.error(`Message not found: ${data.editId}`);
+                    return;
+                }
+
+                const updatedMessage = edited[0];
+
+                for(const client of wss.clients){
+                    if(client.readyState === 1){
+                        client.send(JSON.stringify({
+                            type:"edited",
+                            id: updatedMessage.id,
+                            content: updatedMessage.content,
+                            replyTo: updatedMessage.replyTo
+                        }));
                     }
                 }
             }

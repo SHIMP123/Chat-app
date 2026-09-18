@@ -177,6 +177,21 @@ h1 {
     animation: messageAppear 0.25s ease-out;
 }
 
+.message-header {
+    margin-bottom: 4px;
+    padding-left: 4px;
+}
+
+.message-username {
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaa;
+}
+
+.message-content {
+    margin-bottom: 0 !important;
+}
+
 @keyframes messageAppear {
     from {
         opacity: 0;
