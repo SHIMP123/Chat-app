@@ -3,7 +3,8 @@ import { db } from "./db/db.js";
 import { eq } from "drizzle-orm";
 import { messageSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
-import messagesRouter from "./routes/messagesRouter.js"
+import messagesRouter from "./routes/messagesRouter.js";
+import authRouter from "./routes/auth.js"
 
 async function deleteMessage(messageId){
     try{
@@ -38,6 +39,7 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(express.json());
 app.use(express.static("public"));
 app.use(messagesRouter)
+app.use("/api/auth", authRouter)
 
 app.get("/", (req, res) => {
     res.send("Chat app is running");
@@ -78,7 +80,10 @@ wss.on("connection", (ws) => {
                     username = data.username;
                 }
 
+                const userId = 1;
+
                 const insertedMessage = await db.insert(messageSchema).values({
+                                        userId,
                                         username: username,
                                         content: data.message,
                                         replyTo: data.replyTo ? Number(data.replyTo) : null

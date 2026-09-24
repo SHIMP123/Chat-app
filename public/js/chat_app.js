@@ -41,6 +41,27 @@ async function displayMessages(message){
                 }
             }
 
+            const isOwner = message.username === username;
+
+            const options = isOwner ? `
+                    <button class="reply-button">
+                        ↩ Reply
+                    </button>
+
+                    <button class="edit-button">
+                        ✒ Edit
+                    </button>
+
+                    <button class="delete-button">
+                        ✖ Delete
+                    </button>` 
+                    
+                    : 
+
+                    `<button class="reply-button">
+                        ↩ Reply
+                    </button>`;
+
             const reply = replyMsg ? `
                         <div class="reply-container">
                             ↩ ${replyMsg}
@@ -60,17 +81,7 @@ async function displayMessages(message){
                 <button class="options-btn">...</button>
 
                 <div class="menu-container hide">
-                    <button class="reply-button">
-                        ↩ Reply
-                    </button>
-
-                    <button class="edit-button">
-                        ✒ Edit
-                    </button>
-
-                    <button class="delete-button">
-                        ✖ Delete
-                    </button>
+                    ${options}
                 </div>
             </div>
         `

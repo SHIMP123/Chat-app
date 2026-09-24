@@ -1,5 +1,4 @@
 import express from "express";
-import { Router } from "express";
 import { db } from "../db/db.js";
 import { messageSchema } from "../db/schema.js";
 
