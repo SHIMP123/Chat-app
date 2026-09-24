@@ -2,6 +2,7 @@ import { db } from "../db/db.js";
 import { sessionsSchema, usersSchema } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
+import { hashPassword, verifyPassword } from "../password.js";
 
 export async function getUser(req, res){
     try{
@@ -38,16 +39,25 @@ export async function register(req, res) {
         })
     }
 
-    const user = await db.insert(usersSchema)
-                         .values({
-                            username,
-                            passwordHash: password
-                         }).returning({
-                            id: usersSchema.id,
-                            username: usersSchema.username
-                         })
+    try {
+        const user = await db.insert(usersSchema)
+                             .values({
+                                username,
+                                passwordHash: await hashPassword(password)
+                             }).returning({
+                                id: usersSchema.id,
+                                username: usersSchema.username
+                             });
 
-    res.status(201).json(user[0])
+        res.status(201).json(user[0]);
+    } catch (error) {
+        const databaseError = error.cause ?? error;
+        if (databaseError.code === "23505" && databaseError.constraint_name === "users_username_unique") {
+            return res.status(409).json({ message: "Username already exists." });
+        }
+        console.error("Registration failed:", databaseError.code ?? "unknown database error");
+        return res.status(500).json({ message: "Internal server error" });
+    }
 }
 
 export async function login(req, res){
@@ -65,7 +75,7 @@ export async function login(req, res){
 
     const user = findUsers[0];
 
-    if(findUsers.length === 0 || user.passwordHash !== password){
+    if(!user || !(await verifyPassword(password, user.passwordHash))){
         return res.status(400).json({
             message: "Username or password is wrong!"
         });
