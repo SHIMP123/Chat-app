@@ -38,14 +38,25 @@ export async function register(req, res) {
         })
     }
 
-    const user = await db.insert(usersSchema)
-                         .values({
-                            username,
-                            passwordHash: password
-                         }).returning({
-                            id: usersSchema.id,
-                            username: usersSchema.username
-                         })
+    let user;
+    try {
+        user = await db.insert(usersSchema)
+                       .values({
+                          username,
+                          passwordHash: password
+                       }).returning({
+                          id: usersSchema.id,
+                          username: usersSchema.username
+                       });
+    } catch (error) {
+        if (error.code === "23505" && error.constraint === "users_username_unique") {
+            return res.status(409).json({
+                message: "Username already exists."
+            });
+        }
+
+        throw error;
+    }
 
     res.status(201).json(user[0])
 }
