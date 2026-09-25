@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Chat App Login</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h1>Login</h1>
+
+            <p class="subtitle">Welcome back.</p>
+
+            <form id="login-form">
+
+                <div class="form-group">
+                    <label for="user-username">Username</label>
+                    <input
+                        type="text"
+                        id="user-username"
+                        placeholder="Enter username..."
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="user-password">Password</label>
+                    <input
+                        type="password"
+                        id="user-password"
+                        placeholder="Enter password..."
+                    >
+                </div>
+
+                <button id="login-btn" type="submit">
+                    Login
+                </button>
+                <p id="auth-error" role="alert"></p>
+
+                <div class="auth-link">
+                    Haven't registered yet?
+                    <a href="/registration.html">Create an account</a>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <script src="/js/login.js"></script>
+
+</body>
+</html>

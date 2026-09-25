@@ -8,6 +8,13 @@
       "when": 1789123975927,
       "tag": "0000_nappy_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789996177818,
+      "tag": "0001_magical_gunslinger",
+      "breakpoints": true
     }
   ]
 }

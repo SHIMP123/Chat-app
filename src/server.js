@@ -1,35 +1,23 @@
 import express from "express";
 import { db } from "./db/db.js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { messageSchema } from "./db/schema.js";
+import { getSessionUser } from "./session.js";
 import { WebSocketServer } from "ws";
-import messagesRouter from "./routes/messagesRouter.js"
+import messagesRouter from "./routes/messagesRouter.js";
+import authRouter from "./routes/auth.js"
 
-async function deleteMessage(messageId){
-    try{
-        const deletedRow = await db.delete(messageSchema).where(eq(messageSchema.id, messageId)).returning();
+async function deleteMessage(messageId, userId){
+    return db.delete(messageSchema)
+             .where(and(eq(messageSchema.id, messageId), eq(messageSchema.userId, userId)))
+             .returning();
+}
 
-        console.log(deletedRow);
-        return deletedRow;
-    }catch(e){
-        console.error(`Error deleting the message: ${e}`)
-    }
-} 
-
-async function editing(messageId, content){
-    try{
-        const updatedMsg = await db.update(messageSchema)
-                                    .set({
-                                        content: content,
-                                    })
-                                    .where(eq(messageSchema.id, messageId))
-                                    .returning();;
-        console.log(updatedMsg);
-        
-        return updatedMsg;
-    }catch(e){
-        console.error("Error editing msg: ", e)
-    }
+async function editing(messageId, userId, content){
+    return db.update(messageSchema)
+             .set({ content })
+             .where(and(eq(messageSchema.id, messageId), eq(messageSchema.userId, userId)))
+             .returning();
 }
 
 const app = express();
@@ -38,13 +26,14 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(express.json());
 app.use(express.static("public"));
 app.use(messagesRouter)
+app.use("/api/auth", authRouter)
 
 app.get("/", (req, res) => {
     res.send("Chat app is running");
 })
 
 const server = app.listen(PORT, () => {
-    console.log(`ws://localhost:5000`);
+    console.log(`ws://localhost:${PORT}`);
 })
 
 const wss = new WebSocketServer({ server });
@@ -52,82 +41,94 @@ const wss = new WebSocketServer({ server });
 wss.on("connection", (ws) => {
     console.log("New client connected!");
 
-    let username = "";
+    let user = null;
 
     ws.on("message", async(message) => {
         try{
 
             const data = JSON.parse(message.toString());
-            const messages = await db.select().from(messageSchema)
+            if (!user && data.type === "auth") {
+                user = await getSessionUser(data.token);
+                if (!user) {
+                    ws.close(1008, "Invalid session");
+                    return;
+                }
 
-            if(data.type === "join"){
-                username = data.username
-                for(const client of wss.clients){
-                    if(client.readyState === 1){
-                        client.send(JSON.stringify({ 
-                            type: "system",
-                            message: `${username} joined the chat!`
-                         }))
-                        console.log(messages)
+                ws.user = user;
+                ws.send(JSON.stringify({ type: "authenticated", userId: user.id, username: user.username }));
+                for (const client of wss.clients) {
+                    if (client.user && client.readyState === 1) {
+                        client.send(JSON.stringify({ type: "system", message: `${user.username} joined the chat!` }));
                     }
                 }
+                return;
+            }
+
+            if (!user) {
+                ws.close(1008, "Authentication required");
+                return;
             }
 
             if(data.type === "message"){
-                if(data.username){
-                    username = data.username;
-                }
+                if (typeof data.message !== "string" || !data.message.trim()) return;
+                const replyTo = data.replyTo == null ? null : Number(data.replyTo);
+                if (replyTo !== null && (!Number.isSafeInteger(replyTo) || replyTo <= 0)) return;
 
                 const insertedMessage = await db.insert(messageSchema).values({
-                                        username: username,
-                                        content: data.message,
-                                        replyTo: data.replyTo ? Number(data.replyTo) : null
+                                        userId: user.id,
+                                        username: user.username,
+                                        content: data.message.trim(),
+                                        replyTo
                                     }).returning();
 
                 for (const client of wss.clients) {
-                    if(client.readyState === 1){
+                    if(client.user && client.readyState === 1){
                         client.send(JSON.stringify({
                             type: "message",
                             id: insertedMessage[0].id,
-                            username: username,
-                            content: data.message,
-                            replyTo: data.replyTo
+                            userId: user.id,
+                            username: user.username,
+                            content: insertedMessage[0].content,
+                            replyTo
                         }));
                     }
                 }
             }
 
             if(data.type === "delete"){
-                const deleted = await deleteMessage(Number(data.id))
+                const id = Number(data.id);
+                if (!Number.isSafeInteger(id) || id <= 0) return;
+                const deleted = await deleteMessage(id, user.id);
 
-                if(!deleted || deleted.length === 0){
-                    console.error("Invalid message Id recieved: ", data.id)
+                if (deleted.length === 0) {
+                    ws.send(JSON.stringify({ type: "error", message: "Message not found or access denied." }));
+                    return;
                 }
 
-                console.log(deleted);
-
                 for(const client of wss.clients){
-                    if(client.readyState === 1){
+                    if(client.user && client.readyState === 1){
                         client.send(JSON.stringify({
                             type: "delete",
-                            id: data.id
+                            id
                         }))
                     }
                 }
             }
 
             if(data.type === "edit"){
-                const edited = await editing(Number(data.editId), data.content)
+                const id = Number(data.editId);
+                if (!Number.isSafeInteger(id) || id <= 0 || typeof data.content !== "string" || !data.content.trim()) return;
+                const edited = await editing(id, user.id, data.content.trim());
 
-                if(!edited || edited.length === 0){
-                    console.error(`Message not found: ${data.editId}`);
+                if (edited.length === 0) {
+                    ws.send(JSON.stringify({ type: "error", message: "Message not found or access denied." }));
                     return;
                 }
 
                 const updatedMessage = edited[0];
 
                 for(const client of wss.clients){
-                    if(client.readyState === 1){
+                    if(client.user && client.readyState === 1){
                         client.send(JSON.stringify({
                             type:"edited",
                             id: updatedMessage.id,
@@ -138,20 +139,20 @@ wss.on("connection", (ws) => {
                 }
             }
         }catch(e){
-            console.error(`Failed to parse message: ${e.message}`)
+            console.error("Failed to handle message:", e);
         }
     })
 
 
     ws.on("close", () => {
-        if(!username) return;
+        if(!user) return;
 
         console.log("Client disconnected");
         for(const client of wss.clients){
-            if(client.readyState === 1){
+            if(client.user && client.readyState === 1){
                 client.send(JSON.stringify({
                     type: "system",
-                    message: `${username} left the chat.`
+                    message: `${user.username} left the chat.`
                 }));
             }
         }
