@@ -172,7 +172,7 @@ h1 {
     background: #151515;
     border: 1px solid rgba(255,255,255,0.12);
 
-    color: #eee;
+    color: hsl(0, 0%, 93%);
 
     animation: messageAppear 0.25s ease-out;
 }

@@ -15,6 +15,13 @@
       "when": 1789996177818,
       "tag": "0001_magical_gunslinger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790757714570,
+      "tag": "0002_lean_carnage",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { db } from "../db/db.js";
 import { sessionsSchema, usersSchema } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 export async function getUser(req, res){
     try{
@@ -20,33 +21,41 @@ export async function getUser(req, res){
 }
 
 export async function register(req, res) {
-    const {username, password} = req.body;
+    const {username, email, password} = req.body;
 
-    if(!username || !password){
+    if(!username || !password || !email){
         return res.status(400).json({
-            message: "Username and password must not be empty!"
+            message: "Credentials must not be empty!"
         })
     }
+
 
     const existingUser = await db.select()
                                  .from(usersSchema)
-                                 .where(eq(usersSchema.username, username));
+                                 .where(
+                                    eq(usersSchema.username, username),
+                                    eq(usersSchema.email, email)
+                                );
 
     if(existingUser.length > 0){
         return res.status(409).json({
-            message: "Username already exists."
-        })
+            message: "Username or email already exists."
+        });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     let user;
     try {
         user = await db.insert(usersSchema)
                        .values({
                           username,
-                          passwordHash: password
+                          email,
+                          passwordHash: hashedPassword
                        }).returning({
                           id: usersSchema.id,
-                          username: usersSchema.username
+                          username: usersSchema.username,
+                          email: usersSchema.email
                        });
     } catch (error) {
         if (error.code === "23505" && error.constraint === "users_username_unique") {
@@ -58,7 +67,8 @@ export async function register(req, res) {
         throw error;
     }
 
-    res.status(201).json(user[0])
+    res.status(201).json(user[0]);
+    console.log(user[0]);
 }
 
 export async function login(req, res){
@@ -76,12 +86,14 @@ export async function login(req, res){
 
     const user = findUsers[0];
 
-    if(findUsers.length === 0 || user.passwordHash !== password){
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+    if(findUsers.length === 0 || !isPasswordValid){
         return res.status(400).json({
             message: "Username or password is wrong!"
         });
-    }    
-    
+    }   
+
     const token = crypto.randomBytes(32).toString("hex");
 
     await db.insert(sessionsSchema)

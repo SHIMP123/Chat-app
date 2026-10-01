@@ -1,9 +1,18 @@
-const ws = new WebSocket("ws://localhost:5000");
+const token = localStorage.getItem("token");
+
+console.log(`WebSocket token: ${token}`)
+
+if(!token){
+    alert("Please login first!");
+    window.location.href = "/login.html"
+}
+
+const ws = new WebSocket(
+    `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}?token=${token}`
+);
 
 const messageInput = document.getElementById("message-input");
-const usernameInput = document.getElementById("username-input");
 const sendButton = document.getElementById("send-button");
-const joinBtn = document.getElementById("join-button");
 const messages = document.getElementById("messages");
 
 let username = "";
@@ -140,15 +149,17 @@ messages.addEventListener("click", (e) => {
 
     if(e.target.classList.contains("reply-button")){
         const messageContainer = e.target.closest(".message-container");
+        const menu = messageContainer.querySelector(".menu-container");
         const id = messageContainer ? messageContainer.dataset.id : null;
 
         replyTo = id;
-        console.log(replyTo);
+
+        menu.classList.add("hide")
     }
 
-    //WORK ON THIS
     if(e.target.classList.contains("edit-button")){
         const messageContainer = e.target.closest(".message-container");
+        const menu = messageContainer.querySelector(".menu-container");
 
         const id = messageContainer ? messageContainer.dataset.id : null;
 
@@ -163,32 +174,14 @@ messages.addEventListener("click", (e) => {
         sendButton.textContent = currentlyEditing ? "Save" : "Send";
 
         messageInput.focus();
-
-        console.log("Editing message: ", currentlyEditing)
-    }
-})
-
-joinBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    if(username){
-        return;
-    }
-
-    username = usernameInput.value.trim();
-
-    if(!username){
-        return;
-    }
-
-    if(ws.readyState === WebSocket.OPEN){
-        ws.send(JSON.stringify({ type: "join", username: username }));
-        usernameInput.disabled = true;
-        joinBtn.disabled = true
+        menu.classList.add("hide");
     }
 })
 
 ws.onopen = () => {
     console.log("Connected to server!");
+
+    ws.send(JSON.stringify({ type: "join" }));
 }
 
 document.getElementById("message-form").addEventListener("submit", (e) => {
@@ -227,6 +220,12 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
 
+    if(message.type === "auth_success"){
+        username = message.username;
+        console.log(`Successfully authenticated user ${username}`);
+        loadMessages();
+        return;
+    }
     if(message.type === "delete"){
         const messageEl = document.querySelector(`[data-id='${message.id}']`);
 

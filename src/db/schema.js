@@ -11,6 +11,8 @@ export const usersSchema = pgTable("users", {
 
     username: text("username").notNull().unique(),
 
+    email: text("email").notNull().unique(),
+
     passwordHash: text("password_hash").notNull()
 })
 
