@@ -1,5 +1,6 @@
 import { db } from "../db/db.js";
 import { sessionsSchema, usersSchema } from "../db/schema.js";
+import { deleteSession } from "../session.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -110,4 +111,37 @@ export async function login(req, res){
             username: user.username
         }
     })
+}
+
+export async function logout(req, res){
+
+    try{
+        const authHeader = req.headers.authorization;
+
+        if(!authHeader){
+            return res.status(401).json({
+                message: "Authorization headers missing."
+            });
+        }
+
+        const token = authHeader.split(" ")[1];
+
+        if(!token){
+            return res.status(401).json({
+                message: "Token missing."
+            });
+        }
+
+        await deleteSession(token);
+
+        res.status(201).json({
+            message: "Logged out successfully!"
+        });
+    }catch(e){
+        console.error(`Error logging out: ${e}`);
+
+        res.status(500).json({
+            message: "Internal server error."
+        })
+    }
 }

@@ -12,3 +12,9 @@ export async function getSessionUser(token) {
         .limit(1);
     return users[0] ?? null;
 }
+
+export async function deleteSession(token) {
+    if(typeof token !== "string") return;
+
+    await db.delete(sessionsSchema).where(eq(sessionsSchema.token, token));
+}

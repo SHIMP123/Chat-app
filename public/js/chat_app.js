@@ -14,6 +14,7 @@ const ws = new WebSocket(
 const messageInput = document.getElementById("message-input");
 const sendButton = document.getElementById("send-button");
 const messages = document.getElementById("messages");
+const logoutBtn = document.getElementById("logout-button");
 
 let username = "";
 let replyTo = null;
@@ -29,13 +30,13 @@ async function displayMessages(message){
                 <div class="message-container">
                     <p>${message.message}</p>
                 </div>
-            `
+            `;
         }
 
         if(message.type === "message"){
 
-            console.log("Message id: ",message.id)
-            console.log("Message Reply: ", message.replyTo)
+            console.log("Message id: ",message.id);
+            console.log("Message Reply: ", message.replyTo);
 
             let replyMsg = "";
 
@@ -177,6 +178,24 @@ messages.addEventListener("click", (e) => {
         menu.classList.add("hide");
     }
 })
+
+logoutBtn.addEventListener("click", async () => {
+
+    const token = localStorage.removeItem("token");
+    
+    const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if(response.ok){
+        localStorage.removeItem(token);
+        ws.close();
+        window.location.href = "/login.html";
+    }
+});
 
 ws.onopen = () => {
     console.log("Connected to server!");

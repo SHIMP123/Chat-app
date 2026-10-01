@@ -235,6 +235,46 @@ h1 {
 }
 
 /* =========================
+   LOGOUT BUTTON
+========================= */
+
+#logout-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+
+    padding: 5px 10px;
+
+    border: 1px solid rgba(255, 80, 80, 0.35);
+    border-radius: 8px;
+
+    background: rgba(20, 10, 10, 0.5);
+    color: #ff7777;
+
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+}
+
+#logout-button:hover {
+    background: rgba(255, 60, 60, 0.12);
+    color: #ff4d4d;
+
+    border-color: rgba(255, 80, 80, 0.7);
+
+    box-shadow:
+        0 0 10px rgba(255, 60, 60, 0.2),
+        0 0 25px rgba(255, 60, 60, 0.08);
+
+    transform: translateY(-1px);
+}
+
+#logout-button:active {
+    transform: translateY(0) scale(0.97);
+}
+/* =========================
    MENU CONTAINER
 ========================= */
 
