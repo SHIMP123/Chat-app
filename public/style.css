@@ -235,45 +235,13 @@ h1 {
 }
 
 /* =========================
-   LOGOUT BUTTON
+   HIDE MENU
 ========================= */
 
-#logout-button {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-
-    padding: 5px 10px;
-
-    border: 1px solid rgba(255, 80, 80, 0.35);
-    border-radius: 8px;
-
-    background: rgba(20, 10, 10, 0.5);
-    color: #ff7777;
-
-    font-family: inherit;
-    font-size: 14px;
-    cursor: pointer;
-
-    transition: all 0.25s ease;
+.hide {
+    display: none;
 }
 
-#logout-button:hover {
-    background: rgba(255, 60, 60, 0.12);
-    color: #ff4d4d;
-
-    border-color: rgba(255, 80, 80, 0.7);
-
-    box-shadow:
-        0 0 10px rgba(255, 60, 60, 0.2),
-        0 0 25px rgba(255, 60, 60, 0.08);
-
-    transform: translateY(-1px);
-}
-
-#logout-button:active {
-    transform: translateY(0) scale(0.97);
-}
 /* =========================
    MENU CONTAINER
 ========================= */
@@ -502,5 +470,652 @@ h1 {
 
     #send-button {
         padding: 0 18px;
+    }
+}
+
+/* =========================
+   PROFILE AVATAR BUTTON
+========================= */
+
+#profile-button {
+    position: absolute;
+    top: 5px;
+    right: 60px;
+
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+
+    background: #151515;
+
+    cursor: pointer;
+    overflow: hidden;
+
+    transition: all 0.25s ease;
+}
+
+#profile-avatar {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}
+
+#profile-button:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+
+    box-shadow:
+        0 0 10px rgba(255, 255, 255, 0.2),
+        0 0 25px rgba(255, 255, 255, 0.08);
+
+    transform: translateY(-1px);
+}
+
+#profile-button:active {
+    transform: scale(0.95);
+}
+
+/* =========================
+   PROFILE MENU CONTAINER
+========================= */
+
+.profile-menu-container {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+
+/* =========================
+   PROFILE AVATAR
+========================= */
+
+#profile-button {
+    width: 42px;
+    height: 42px;
+
+    padding: 0;
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+
+    background: #151515;
+
+    cursor: pointer;
+    overflow: hidden;
+
+    transition: all 0.25s ease;
+}
+
+#profile-avatar {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+#profile-button:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+
+    box-shadow:
+        0 0 10px rgba(255,255,255,0.2),
+        0 0 25px rgba(255,255,255,0.08);
+
+    transform: translateY(-1px);
+}
+
+#profile-button:active {
+    transform: scale(0.95);
+}
+
+
+/* =========================
+   PROFILE MENU
+========================= */
+
+.profile-menu {
+    position: absolute;
+
+    top: 50px;
+    right: 0;
+
+    width: 170px;
+
+    padding: 8px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    background: rgba(15, 15, 15, 0.95);
+
+    backdrop-filter: blur(20px);
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+
+    box-shadow:
+        0 0 25px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(255,255,255,0.02);
+
+    z-index: 100;
+}
+
+
+/* =========================
+   MENU BUTTONS
+========================= */
+
+.profile-menu button {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #ddd;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+}
+
+.profile-menu button:hover {
+    background: #222;
+
+    color: white;
+
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+#logout-button {
+    color: #ff7777;
+
+    border-color: rgba(255, 80, 80, 0.15);
+}
+
+#logout-button:hover {
+    background: rgba(255, 60, 60, 0.1);
+
+    color: #ff4d4d;
+
+    border-color: rgba(255, 80, 80, 0.5);
+
+    box-shadow:
+        0 0 10px rgba(255, 60, 60, 0.15);
+}
+
+
+/* =========================
+   HIDE MENU
+========================= */
+
+.hide {
+    display: none;
+}
+
+/* =========================
+   PROFILE SIDE PANEL
+========================= */
+
+.profile-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+
+    width: 360px;
+    height: 100vh;
+
+    background: rgba(12, 12, 12, 0.97);
+    backdrop-filter: blur(20px);
+
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+
+    box-shadow:
+        -10px 0 30px rgba(0, 0, 0, 0.4);
+
+    z-index: 200;
+
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+
+    overflow-y: auto;
+}
+
+/* JavaScript will add this class */
+
+.profile-panel.show {
+    transform: translateX(0);
+}
+
+
+/* Header */
+
+.profile-panel-header {
+    height: 65px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 20px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-panel-header h2 {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+
+/* Close button */
+
+.close-profile-panel {
+    width: 32px;
+    height: 32px;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+
+    background: transparent;
+    color: #aaa;
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.close-profile-panel:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+
+/* Content */
+
+.profile-panel-content {
+    padding: 25px 20px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* Avatar */
+
+.profile-preview {
+    display: flex;
+    justify-content: center;
+
+    margin-bottom: 25px;
+}
+
+#profile-panel-avatar {
+    width: 100px;
+    height: 100px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+
+/* Labels */
+
+.profile-panel-content label {
+    margin-bottom: 7px;
+
+    font-size: 12px;
+    color: #aaa;
+
+    font-weight: 500;
+}
+
+
+/* Inputs */
+
+.profile-panel-content input,
+.profile-panel-content textarea {
+    width: 100%;
+
+    margin-bottom: 18px;
+
+    padding: 11px 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    color: white;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    outline: none;
+
+    transition: 0.2s ease;
+}
+
+.profile-panel-content textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.profile-panel-content input:focus,
+.profile-panel-content textarea:focus {
+    border-color: rgba(255, 255, 255, 0.35);
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+
+/* Save button */
+
+#save-profile-button {
+    margin-top: 5px;
+
+    padding: 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    color: white;
+
+    font-family: inherit;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+#save-profile-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.avatar-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 25px;
+}
+
+#profile-panel-avatar {
+    width: 110px;
+    height: 110px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+#profile-button-avatar {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+#avatar-input {
+    display: none;
+}
+
+.change-avatar-button {
+    padding: 8px 14px;
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.05);
+
+    color: #ccc;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.change-avatar-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+
+/* Keep each message compact and aligned */
+.message-container:has(.message-profile-pic) {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-areas:
+        "avatar header options"
+        "avatar content content"
+        "reply reply reply"
+        "menu menu menu";
+    gap: 3px 10px;
+
+    margin: 4px 0;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+}
+
+.message-container:has(.message-profile-pic):hover {
+    background: #191c23;
+}
+
+/* Avatar beside the message */
+.message-profile-pic {
+    grid-area: avatar;
+    width: 42px;
+    height: 42px;
+    margin-top: 2px;
+}
+
+.message-profile-pic img {
+    width: 42px;
+    height: 42px;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Username and content */
+.message-header {
+    grid-area: header;
+    align-self: center;
+}
+
+.message-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f0f0f0;
+}
+
+.message-content {
+    grid-area: content;
+    margin: 2px 0 0;
+    color: #d1d1d1;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* Keep the options button on the right */
+.options-btn {
+    grid-area: options;
+    align-self: start;
+}
+
+/* System notifications should not use the avatar grid */
+.message-container:not(:has(.message-profile-pic)) {
+    display: block;
+    width: auto;
+    margin: 8px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #17191e;
+    color: #9ba3b2;
+}
+
+.message-container:not(:has(.message-profile-pic)) p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Keep the messages area from stretching individual messages */
+#messages {
+    min-width: 0;
+}
+
+@media (max-width: 480px) {
+    .message-profile-pic,
+    .message-profile-pic img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .message-container:has(.message-profile-pic) {
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        gap: 3px 8px;
+        padding: 8px 4px;
+    }
+}
+
+
+/* ===== MESSAGE HEADER ===== */
+.message-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+    min-width: 0;
+}
+
+/* ===== USERNAME ===== */
+.message-username {
+    color: #f2f3f5;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.15px;
+    transition: color 0.2s ease;
+}
+
+.message-container:hover .message-username {
+    color: #ffffff;
+}
+
+/* ===== TIMESTAMP ===== */
+.message-time-stamp {
+    color: #777e8b;
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    opacity: 0.8;
+    transition:
+        color 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.message-container:hover .message-time-stamp {
+    color: #a5adbb;
+    opacity: 1;
+}
+
+/* ===== MESSAGE CONTENT ===== */
+.message-content {
+    color: #dcdee3;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    margin: 0;
+}
+
+/* ===== MESSAGE CONTAINER ===== */
+.message-container {
+    position: relative;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    transition: background-color 0.2s ease;
+}
+
+.message-container:hover {
+    background-color: rgba(255, 255, 255, 0.035);
+}
+
+/* ===== PROFILE PICTURE ===== */
+.message-profile-pic {
+    flex-shrink: 0;
+}
+
+.message-profile-pic .profile-picture {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ===== MOBILE TWEAKS ===== */
+@media (max-width: 600px) {
+    .message-container {
+        padding: 8px;
+    }
+
+    .message-header {
+        gap: 6px;
+    }
+
+    .message-username {
+        font-size: 0.85rem;
+    }
+
+    .message-time-stamp {
+        font-size: 0.66rem;
+    }
+
+    .message-content {
+        font-size: 0.88rem;
     }
 }

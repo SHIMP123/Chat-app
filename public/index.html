@@ -7,8 +7,89 @@
     <title>Chat app</title>
 </head>
 <body>
-    
-        <button id="logout-button">logout</button>
+
+        <div id="menu-buttons">
+            
+            <button id="profile-button">
+                <img id="profile-button-avatar" src="/imgs/default-avatar.jpg" alt="Profile">
+            </button>
+
+            <div id="profile-menu" class="profile-menu hide">
+
+                <button id="customize-profile-button">
+                    Profile
+                </button>
+
+                <button id="logout-button">
+                    logout
+                </button>
+
+                <div id="profile-panel" class="profile-panel">
+                    <div class="profile-panel-header">
+                            <h2>Edit Profile</h2>
+
+                            <button id="close-profile-panel" class="close-profile-panel">
+                                ×
+                            </button>
+                        </div>
+
+                        
+                        <div class="profile-panel-content">
+
+                            <div class="profile-preview">
+                                <img
+                                    id="profile-panel-avatar"
+                                    src="/imgs/default-avatar.jpg"
+                                    alt="Profile picture"
+                                >
+                            </div>
+
+                            <label for="display-name">Display Name</label>
+                            <input
+                                type="text"
+                                id="display-name"
+                                placeholder="Your display name"
+                            >
+
+                            <label for="bio">Bio</label>
+                            <textarea
+                                id="bio"
+                                placeholder="Tell people about yourself..."
+                            ></textarea>
+
+                            <label for="status">Status</label>
+                            <input
+                                type="text"
+                                id="status"
+                                placeholder="What are you doing?"
+                            >
+
+                            <div class="avatar-upload">
+                                <label
+                                    for="avatar-input"
+                                    class="change-avatar-button"
+                                >
+                                    Change avatar
+                                </label>
+
+                                <input
+                                    type="file"
+                                    id="avatar-input"
+                                    accept="image/*"
+                                >
+                            </div>
+
+                            <button id="save-profile-button">
+                                Save Changes
+                            </button>
+
+                        </div>
+
+                </div>
+
+            </div>
+
+        </div>
 
         <div id="messages">
 

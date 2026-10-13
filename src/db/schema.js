@@ -16,6 +16,30 @@ export const usersSchema = pgTable("users", {
     passwordHash: text("password_hash").notNull()
 })
 
+export const profileSchema = pgTable("profiles", {
+    id: serial("id").primaryKey(),
+
+    userId: integer("user_id")
+            .notNull()
+            .unique()
+            .references(() => usersSchema.id),
+
+    displayName: text("display_name"),
+
+    bio: text("bio"),
+
+    avatarUrl: text("avatar_url"),
+
+    status: text("status"),
+
+    createdAt: timestamp("created_at")
+                        .notNull()
+                        .defaultNow(),
+                   
+    updatedAt: timestamp("updated_at")
+                        .notNull()
+                        .defaultNow()                    
+})
 export const sessionsSchema = pgTable("sessions", {
     id: serial("id").primaryKey(),
 

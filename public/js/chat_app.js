@@ -11,18 +11,63 @@ const ws = new WebSocket(
     `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}?token=${token}`
 );
 
+//INPUTS
 const messageInput = document.getElementById("message-input");
+const avatarInput = document.getElementById("avatar-input");
+//BUTTONS
 const sendButton = document.getElementById("send-button");
-const messages = document.getElementById("messages");
 const logoutBtn = document.getElementById("logout-button");
+const profileBtn = document.getElementById("profile-button");
+const customizeProfileBtn = document.getElementById("customize-profile-button");
+const saveProfileBtn = document.getElementById("save-profile-button");
+//DIVS
+const messages = document.getElementById("messages");
+const profilePanel = document.getElementById("profile-panel");
+const closeProfilePanel = document.getElementById("close-profile-panel");
+const profileMenu = document.getElementById("profile-menu");
+//IMG
+const profilePanelAvatar = document.getElementById("profile-panel-avatar");
 
 let username = "";
 let replyTo = null;
 let currentlyEditing = null;
 
+//FUNCTION TO FORMAT TIME
+function formatTimestamp(timeStamp) {
+    if(!timeStamp) return "";
 
+    const date = new Date(timeStamp);
+
+    if(Number.isNaN(date.getTime())){
+        return "";
+    }
+
+    const now = new Date()
+
+    const isToday = date.getDate() === now.getDate() &&
+                    date.getMonth() === now.getMonth() &&
+                    date.getFullYear() === now.getFullYear()
+
+    if(isToday){
+        return date.toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+//DISPLAY MESSAGES FUNCTION
 async function displayMessages(message){
     try{
+
         let html = "";
 
         if(message.type === "system"){
@@ -34,10 +79,6 @@ async function displayMessages(message){
         }
 
         if(message.type === "message"){
-
-            console.log("Message id: ",message.id);
-            console.log("Message Reply: ", message.replyTo);
-
             let replyMsg = "";
 
             if(message.replyTo){
@@ -77,13 +118,26 @@ async function displayMessages(message){
                             ↩ ${replyMsg}
                         </div>` : "";
 
+            const avatarUrl = message.avatarUrl || "/imgs/default-avatar.jpg";            
+
             html = `
             <div class="message-container" data-id="${message.id}">
+                <div class="message-profile-pic">
+                    <img
+                        class="profile-picture"
+                        src="${avatarUrl}"
+                        alt="Profile picture" 
+                    >
+                </div>
                 ${reply}
                 <div class="message-header">
                     <span class="message-username">
                         ${message.username}
                     </span>
+
+                    <small class="message-time-stamp">
+                        ${formatTimestamp(message.createdAt)}
+                    </small>
                 </div>
                 <p class="message-content">
                     ${message.content}
@@ -104,10 +158,10 @@ async function displayMessages(message){
         console.log(message)
     }catch(e){
         console.error(e)
-        ws.json({ type: "Error", message: "Resource not found." });
+        console.error("Internal server error: ", e)
     }
 }
-
+//LOAD MESSAGES FUNCTION
 async function loadMessages() {
     const response = await fetch("/messages");
 
@@ -119,11 +173,76 @@ async function loadMessages() {
             username: message.username,
             content: message.content,
             id: message.id,
-            replyTo: message.replyTo
+            replyTo: message.replyTo,
+            createdAt: message.createdAt,
+            avatarUrl: message.avatarUrl
         });
     }
 }
+//LOAD PROFILE
+async function loadProfile(){
+    const token = localStorage.getItem("token");
 
+    if(!token){
+        console.log("No authentiaction token found.");
+        window.location.href = "/login.html";
+        return
+    }
+
+    try{
+
+        const response = await fetch("/api/profile", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if(!response.ok){
+            const errorText = await response.text();
+
+            console.error("Profile update failed:", response.status);
+            console.error("Server response:", errorText);
+            return;
+        }
+
+        const data = await response.json();
+
+        console.log("PROFILE: ",data)
+
+        document.getElementById("display-name").value = data.displayName || "";
+        document.getElementById("bio").value = data.bio || "";
+        document.getElementById("status").value = data.status || "";
+
+        const avatarUrl = data.avatarUrl || "/imgs/default-avatar.jpg";
+
+        console.log("Profile response:", data);
+        console.log("Saved avatar URL:", data.avatarUrl);
+        console.log("URL being displayed:", avatarUrl);
+
+        if(profilePanelAvatar){
+            profilePanelAvatar.src = avatarUrl;
+        }
+
+        const profileBtnAvatar = document.getElementById("profile-button-avatar");
+
+        if(profileBtnAvatar){
+            profileBtnAvatar.src = avatarUrl
+        }
+
+        profileBtnAvatar.onerror = () => {
+            console.error("Profile button avatar failed to load:", profileBtnAvatar.src);
+        };
+
+        profileBtnAvatar.onload = () => {
+            console.log("Profile button avatar loaded successfully.");
+        };
+        
+        return data;
+    }catch(e){
+        console.error("Could not find profile: ", e)
+    }
+}
+//MENU BUTTONS FUNCTIONS
 messages.addEventListener("click", (e) => {
 
     if(e.target.classList.contains("options-btn")){
@@ -178,7 +297,7 @@ messages.addEventListener("click", (e) => {
         menu.classList.add("hide");
     }
 })
-
+//LOGOUT FUNCTION
 logoutBtn.addEventListener("click", async () => {
 
     const token = localStorage.removeItem("token");
@@ -195,7 +314,83 @@ logoutBtn.addEventListener("click", async () => {
         ws.close();
         window.location.href = "/login.html";
     }
-});
+})
+//PROFILE HIDE/SHOW FUNCTIONS
+profileBtn.addEventListener("click", () => {
+    profileMenu.classList.toggle("hide")
+})
+
+customizeProfileBtn.addEventListener("click", () => {
+    profileMenu.classList.add("hide");
+
+    profilePanel.classList.add("show");
+
+    loadProfile();
+})
+
+closeProfilePanel.addEventListener("click", () => {
+    profilePanel.classList.remove("show");
+})
+
+saveProfileBtn.addEventListener("click", async () => {
+    
+    const displayName = document.getElementById("display-name").value;
+    const bio = document.getElementById("bio").value;
+    const status = document.getElementById("status").value;
+
+    const avatarFile = avatarInput.files[0];
+
+    console.log(`Selected avatar file: ${avatarFile}`);
+
+    const formFile = new FormData();
+
+    formFile.append("displayName", displayName);
+    formFile.append("bio", bio);
+    formFile.append("status", status);
+
+    if(avatarFile){
+        formFile.append("avatar", avatarFile)
+    }
+
+    const token = localStorage.getItem("token");
+
+    try{
+        const response = await fetch("/api/profile", {
+            method: "PATCH",
+
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+
+            body: formFile
+        });
+
+        if(!response.ok){
+            console.log("Error fetching profile.");
+            return;
+        }
+
+        const data = await response.json();
+    
+        await loadProfile();
+        console.log("Profile data: ", data)
+    }catch(e){
+        console.error("Error updating profile: ", e)
+    }
+
+})
+
+avatarInput.addEventListener("change", () => {
+    const file = avatarInput.files[0];
+
+    if(!file){
+        return;
+    }
+
+    const imageURL = URL.createObjectURL(file);
+    
+    profilePanelAvatar.src = imageURL;
+})
 
 ws.onopen = () => {
     console.log("Connected to server!");
@@ -267,3 +462,4 @@ ws.onmessage = (event) => {
 }
 
 loadMessages();
+loadProfile();

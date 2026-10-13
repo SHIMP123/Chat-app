@@ -1,11 +1,12 @@
 import express from "express";
 import { db } from "./db/db.js";
 import { eq } from "drizzle-orm";
-import { messageSchema } from "./db/schema.js";
+import { messageSchema, profileSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
 import { getSessionUser } from "./session.js";
 import messagesRouter from "./routes/messagesRouter.js";
 import authRouter from "./routes/auth.js"
+import profileRouter from "./routes/profileRouter.js"
 
 async function deleteMessage(messageId, requestUserId){
     try{
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use(messagesRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/profile", profileRouter);
 
 app.get("/", (req, res) => {
     res.send("Chat app is running");
@@ -106,6 +108,14 @@ wss.on("connection", async (ws, req) => {
             if(data.type === "message"){
                 username = user.username;
 
+                const [profile] = await db.select({
+                    avatarUrl: profileSchema.avatarUrl
+                    })
+                                        .from(profileSchema)
+                                        .where(eq(profileSchema.userId, userId));
+                
+                const avatarUrl = profile?.avatarUrl || "/imgs/default-avatar.jpg" 
+
                 const insertedMessage = await db.insert(messageSchema).values({
                                         userId,
                                         username: username,
@@ -120,7 +130,8 @@ wss.on("connection", async (ws, req) => {
                             id: insertedMessage[0].id,
                             username: username,
                             content: data.message,
-                            replyTo: data.replyTo
+                            replyTo: data.replyTo,
+                            avatarUrl: avatarUrl
                         }));
                     }
                 }

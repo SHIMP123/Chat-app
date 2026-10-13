@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 export async function authenticationToken(req, res, next){
     try{
-        const authHeaders = req.headers.authoriztion;
+        const authHeaders = req.headers.authorization;
 
         if(!authHeaders){
             return res.status(401).json({
