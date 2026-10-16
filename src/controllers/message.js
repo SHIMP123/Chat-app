@@ -19,7 +19,6 @@ export async function getMessage(req, res){
           .leftJoin(usersSchema, eq(messageSchema.userId, usersSchema.id))
           .leftJoin(profileSchema, eq(usersSchema.id, profileSchema.userId));
 
-        console.log("DATA:",data)
         res.json({ data });
     }catch(e){
         console.error(`Error getting messages: ${e}`);

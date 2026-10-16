@@ -32,6 +32,14 @@ let username = "";
 let replyTo = null;
 let currentlyEditing = null;
 
+const onlineUser = new Set();
+
+//HELPER
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
 //FUNCTION TO FORMAT TIME
 function formatTimestamp(timeStamp) {
     if(!timeStamp) return "";
@@ -54,6 +62,7 @@ function formatTimestamp(timeStamp) {
             minute: '2-digit'
         });
     }
+    
     return date.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -63,7 +72,6 @@ function formatTimestamp(timeStamp) {
         hour12: true
     });
 }
-
 //DISPLAY MESSAGES FUNCTION
 async function displayMessages(message){
     try{
@@ -93,6 +101,9 @@ async function displayMessages(message){
             }
 
             const isOwner = message.username === username;
+            const isOnline = onlineUser.has(Number(message.userId))
+
+            const statusIndicator = isOnline ? "🟢" : "⚪";
 
             const options = isOwner ? `
                     <button class="reply-button">
@@ -131,8 +142,11 @@ async function displayMessages(message){
                 </div>
                 ${reply}
                 <div class="message-header">
-                    <span class="message-username">
-                        ${message.username}
+                    <span class="message-username" data-user-id="${message.userId}">
+                        ${escapeHtml(message.username)} 
+                        <span class="status-indicator">
+                            ${statusIndicator}
+                        </span>
                     </span>
 
                     <small class="message-time-stamp">
@@ -154,8 +168,6 @@ async function displayMessages(message){
         messages.innerHTML += html;
 
         messages.scrollTop = messages.scrollHeight;
-
-        console.log(message)
     }catch(e){
         console.error(e)
         console.error("Internal server error: ", e)
@@ -172,10 +184,12 @@ async function loadMessages() {
             type: "message",
             username: message.username,
             content: message.content,
+            userId: message.userId,
             id: message.id,
             replyTo: message.replyTo,
             createdAt: message.createdAt,
-            avatarUrl: message.avatarUrl
+            avatarUrl: message.avatarUrl,
+            status: message.status
         });
     }
 }
@@ -207,17 +221,11 @@ async function loadProfile(){
 
         const data = await response.json();
 
-        console.log("PROFILE: ",data)
-
         document.getElementById("display-name").value = data.displayName || "";
         document.getElementById("bio").value = data.bio || "";
         document.getElementById("status").value = data.status || "";
 
         const avatarUrl = data.avatarUrl || "/imgs/default-avatar.jpg";
-
-        console.log("Profile response:", data);
-        console.log("Saved avatar URL:", data.avatarUrl);
-        console.log("URL being displayed:", avatarUrl);
 
         if(profilePanelAvatar){
             profilePanelAvatar.src = avatarUrl;
@@ -439,6 +447,21 @@ ws.onmessage = (event) => {
         console.log(`Successfully authenticated user ${username}`);
         loadMessages();
         return;
+    }
+    if(message.type === "presence"){
+        const userId = Number(message.userId);
+
+        if(message.status === "online"){
+            onlineUser.add(userId);
+        }else if(message.status === "offline"){
+            onlineUser.delete(userId)
+        }
+
+        const indicators = document.querySelectorAll(` .message-username[data-user-id="${userId}"] .status-indicator`);
+
+        indicators.forEach((indicator) => {
+            indicator.textContent = onlineUser.has(userId) ? "🟢" : "⚪";
+        })
     }
     if(message.type === "delete"){
         const messageEl = document.querySelector(`[data-id='${message.id}']`);

@@ -16,8 +16,7 @@ export async function getProfile(req, res){
                 message: "Profile not found."
             })
         }
-
-        console.log(profile[0])
+        
         return res.json(profile[0])
     }catch(e){
         console.error(`Error getting profile: ${e}`);

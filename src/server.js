@@ -39,6 +39,14 @@ async function editing(messageId, content){
     }
 }
 
+function broadcastPresence(data){
+    wss.clients.forEach((client) => {
+        if(client.readyState === 1){
+            client.send(JSON.stringify(data));
+        }
+    });
+}
+
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -57,6 +65,8 @@ const server = app.listen(PORT, () => {
 })
 
 const wss = new WebSocketServer({ server });
+
+const onlineUsers = new Map()
 
 wss.on("connection", async (ws, req) => {
     console.log("New client connected!");
@@ -83,24 +93,35 @@ wss.on("connection", async (ws, req) => {
 
     let username = user.username;
 
-    console.log(`Username: ${username}`);
-    console.log(`Token: ${token}`);
+    const currentlyOnline = onlineUsers.get(userId) || 0;
+
+    onlineUsers.set(userId, currentlyOnline + 1);
+
+    let isActive = true;
+
+    console.log(`${username} connected`);
+    console.log("Online connections: ", onlineUsers);
+
+    broadcastPresence({
+                        type: "presence",
+                        userId: userId,
+                        username: username,
+                        status: "online"
+                    });
 
     ws.on("message", async(message) => {
         try{
 
             const data = JSON.parse(message.toString());
-            const messages = await db.select().from(messageSchema)
 
             if(data.type === "join"){
-                username = user.username
+                username = user.username;
                 for(const client of wss.clients){
                     if(client.readyState === 1){
                         client.send(JSON.stringify({ 
                             type: "system",
                             message: `${username} joined the chat!`
-                         }))
-                        console.log(messages)
+                         }));
                     }
                 }
             }
@@ -131,17 +152,18 @@ wss.on("connection", async (ws, req) => {
                             username: username,
                             content: data.message,
                             replyTo: data.replyTo,
-                            avatarUrl: avatarUrl
+                            avatarUrl: avatarUrl,
+                            status: isActive
                         }));
                     }
                 }
             }
 
             if(data.type === "delete"){
-                const deleted = await deleteMessage(Number(data.id), userId)
+                const deleted = await deleteMessage(Number(data.id), userId);
 
                 if(!deleted || deleted.length === 0){
-                    console.error("Invalid message Id recieved: ", data.id)
+                    console.error("Invalid message Id recieved: ", data.id);
                 }
 
                 console.log(deleted);
@@ -151,7 +173,7 @@ wss.on("connection", async (ws, req) => {
                         client.send(JSON.stringify({
                             type: "delete",
                             id: data.id
-                        }))
+                        }));
                     }
                 }
             }
@@ -179,14 +201,32 @@ wss.on("connection", async (ws, req) => {
             }
 
         }catch(e){
-            console.error(`Failed to parse message: ${e.message}`)
+            console.error(`Failed to parse message: ${e.message}`);
         }
     })
 
 
     ws.on("close", () => {
+        const currentCount = onlineUsers.get(userId) || 0;
+
+        if(currentCount <= 1){
+            
+            broadcastPresence({
+                                type: "presence",
+                                userId: userId,
+                                username: username,
+                                status: "offline"
+                            });
+
+            onlineUsers.delete();
+            console.log(`${username} is now offline.`);
+        }else{
+            onlineUsers.set(userId, currentCount - 1);
+            console.log(`${username} is still connected.`)
+        }
         if(!username) return;
 
+        isActive = false;
         console.log("Client disconnected");
         for(const client of wss.clients){
             if(client.readyState === 1){
