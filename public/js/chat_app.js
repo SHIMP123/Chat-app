@@ -192,6 +192,18 @@ async function loadMessages() {
             status: message.status
         });
     }
+
+    
+    document.querySelectorAll(".message-username[data-user-id]")
+        .forEach((usernameEl) => {
+            const userId = Number(usernameEl.dataset.userId);
+            const indicator = usernameEl.querySelector(".status-indicator");
+
+            if (indicator) {
+                indicator.textContent = onlineUser.has(userId) ? "🟢" : "⚪";
+            }
+        });
+
 }
 //LOAD PROFILE
 async function loadProfile(){
@@ -440,7 +452,12 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
 })
 
 ws.onmessage = (event) => {
+
+    console.log("Raw WS event:", event.data);
+
     const message = JSON.parse(event.data);
+
+    console.log("Parsed WS event:", message);
 
     if(message.type === "auth_success"){
         username = message.username;
@@ -456,13 +473,51 @@ ws.onmessage = (event) => {
         }else if(message.status === "offline"){
             onlineUser.delete(userId)
         }
+     
+        document
+            .querySelectorAll(".message-username[data-user-id]")
+            .forEach((usernameEl) => {
+                const messageUserId = Number(usernameEl.dataset.userId);
+                const indicator = usernameEl.querySelector(".status-indicator");
 
-        const indicators = document.querySelectorAll(` .message-username[data-user-id="${userId}"] .status-indicator`);
+                if (indicator) {
+                    indicator.textContent = onlineUser.has(messageUserId)
+                        ? "🟢"
+                        : "⚪";
+                }
+            });
 
-        indicators.forEach((indicator) => {
-            indicator.textContent = onlineUser.has(userId) ? "🟢" : "⚪";
-        })
+        return;
     }
+
+    if(message.type === "presence_snapshot"){
+        onlineUser.clear();
+
+        message.users.forEach((userId) => {
+            onlineUser.add(Number(userId));
+        })
+
+        console.log("Online user IDs:", [...onlineUser]);
+
+        console.log(
+            "Message username elements:",
+            document.querySelectorAll(".message-username[data-user-id]").length
+        );
+
+
+        document.querySelectorAll(".message-username[data-user-id]"
+        ).forEach((usernameEl) => {
+            const userId = Number(usernameEl.dataset.userId);
+            const indicator = usernameEl.querySelector(" .status-indicator");
+
+            if(indicator){
+                indicator.textContent = onlineUser.has(userId) ? "🟢" : "⚪";
+            }
+        })
+
+        return;
+    }
+
     if(message.type === "delete"){
         const messageEl = document.querySelector(`[data-id='${message.id}']`);
 
@@ -482,6 +537,7 @@ ws.onmessage = (event) => {
     }else{
         displayMessages(message);
     }
+
 }
 
 loadMessages();

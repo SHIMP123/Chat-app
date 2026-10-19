@@ -97,10 +97,15 @@ wss.on("connection", async (ws, req) => {
 
     onlineUsers.set(userId, currentlyOnline + 1);
 
-    let isActive = true;
+    ws.send(JSON.stringify({
+        type: "presence_snapshot",
+        users: [...onlineUsers.keys()]
+    }));
 
     console.log(`${username} connected`);
     console.log("Online connections: ", onlineUsers);
+
+    console.log("Broadcasting presence: online", userId, username);
 
     broadcastPresence({
                         type: "presence",
@@ -149,11 +154,11 @@ wss.on("connection", async (ws, req) => {
                         client.send(JSON.stringify({
                             type: "message",
                             id: insertedMessage[0].id,
+                            userId: userId,
                             username: username,
                             content: data.message,
                             replyTo: data.replyTo,
                             avatarUrl: avatarUrl,
-                            status: isActive
                         }));
                     }
                 }
@@ -210,7 +215,10 @@ wss.on("connection", async (ws, req) => {
         const currentCount = onlineUsers.get(userId) || 0;
 
         if(currentCount <= 1){
-            
+            onlineUsers.delete(userId);
+
+            console.log("Broadcasting presence: offline", userId, username);
+
             broadcastPresence({
                                 type: "presence",
                                 userId: userId,
@@ -218,7 +226,6 @@ wss.on("connection", async (ws, req) => {
                                 status: "offline"
                             });
 
-            onlineUsers.delete();
             console.log(`${username} is now offline.`);
         }else{
             onlineUsers.set(userId, currentCount - 1);
@@ -226,7 +233,6 @@ wss.on("connection", async (ws, req) => {
         }
         if(!username) return;
 
-        isActive = false;
         console.log("Client disconnected");
         for(const client of wss.clients){
             if(client.readyState === 1){
