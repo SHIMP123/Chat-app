@@ -20,11 +20,15 @@ const logoutBtn = document.getElementById("logout-button");
 const profileBtn = document.getElementById("profile-button");
 const customizeProfileBtn = document.getElementById("customize-profile-button");
 const saveProfileBtn = document.getElementById("save-profile-button");
+const onlineUsersButton = document.getElementById("Online-users-icon");
+const closeOnlineUsersPanelButton = document.getElementById("close-online-users-panel");
 //DIVS
 const messages = document.getElementById("messages");
 const profilePanel = document.getElementById("profile-panel");
 const closeProfilePanel = document.getElementById("close-profile-panel");
 const profileMenu = document.getElementById("profile-menu");
+const onlineUsersPanel = document.getElementById("online-users-panel");
+const onlineUsersContent = document.getElementById("online-users-content");
 //IMG
 const profilePanelAvatar = document.getElementById("profile-panel-avatar");
 
@@ -33,6 +37,7 @@ let replyTo = null;
 let currentlyEditing = null;
 
 const onlineUser = new Set();
+const onlineUserNames = new Map();
 
 //HELPER
 function escapeHtml(text) {
@@ -256,11 +261,31 @@ async function loadProfile(){
         profileBtnAvatar.onload = () => {
             console.log("Profile button avatar loaded successfully.");
         };
-        
+    
         return data;
     }catch(e){
         console.error("Could not find profile: ", e)
     }
+}
+//DISPLAY'S ONLINE USERS
+async function displayOnlineUsers(){
+    
+    onlineUsersContent.innerHTML = "";
+
+    onlineUserNames.forEach((username, userId) => {
+        const userElement = document.createElement("div");
+        userElement.classList.add("online-usernames");
+
+        const usernameElement = document.createElement("span");
+        usernameElement.textContent = username;
+
+        const statusElement = document.createElement("span");
+        statusElement.textContent = "🟢";
+
+        userElement.append(statusElement, usernameElement);
+        onlineUsersContent.append(userElement);
+    });
+
 }
 //MENU BUTTONS FUNCTIONS
 messages.addEventListener("click", (e) => {
@@ -412,6 +437,15 @@ avatarInput.addEventListener("change", () => {
     profilePanelAvatar.src = imageURL;
 })
 
+onlineUsersButton.addEventListener("click", () => {
+    onlineUsersPanel.classList.add("show");
+    displayOnlineUsers();
+})
+
+closeOnlineUsersPanelButton.addEventListener("click", () => {
+    onlineUsersPanel.classList.remove("show");
+})
+
 ws.onopen = () => {
     console.log("Connected to server!");
 
@@ -470,8 +504,10 @@ ws.onmessage = (event) => {
 
         if(message.status === "online"){
             onlineUser.add(userId);
+            onlineUserNames.set(userId, message.username);
         }else if(message.status === "offline"){
-            onlineUser.delete(userId)
+            onlineUser.delete(userId);
+            onlineUserNames.delete(userId);
         }
      
         document
@@ -492,10 +528,14 @@ ws.onmessage = (event) => {
 
     if(message.type === "presence_snapshot"){
         onlineUser.clear();
+        onlineUserNames.clear();
 
-        message.users.forEach((userId) => {
+        message.users.forEach((user) => {
+            const userId = Number(user.userId);
+
             onlineUser.add(Number(userId));
-        })
+            onlineUserNames.set(userId, user.username);
+        });
 
         console.log("Online user IDs:", [...onlineUser]);
 
@@ -514,6 +554,8 @@ ws.onmessage = (event) => {
                 indicator.textContent = onlineUser.has(userId) ? "🟢" : "⚪";
             }
         })
+
+        displayOnlineUsers();
 
         return;
     }

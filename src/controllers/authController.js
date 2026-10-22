@@ -64,6 +64,7 @@ export async function register(req, res) {
                     userId: user[0].id
                 })
     } catch (error) {
+
         if (error.code === "23505" && error.constraint === "users_username_unique") {
             return res.status(409).json({
                 message: "Username already exists."

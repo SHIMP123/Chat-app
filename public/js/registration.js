@@ -24,11 +24,12 @@ registrationForm.addEventListener("submit", async (e) => {
             })
         });
 
+        const data = await response.json();
+
         if(!response.ok){
             alert(data.message || "Registration failed. Please try again.");
             return;
         }
-        const data = await response.json();
 
         console.log(data)
         window.location.href = "/login.html"

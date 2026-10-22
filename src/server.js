@@ -66,7 +66,8 @@ const server = app.listen(PORT, () => {
 
 const wss = new WebSocketServer({ server });
 
-const onlineUsers = new Map()
+const onlineUsers = new Map();
+const onlineUserNames = new Map();
 
 wss.on("connection", async (ws, req) => {
     console.log("New client connected!");
@@ -96,10 +97,14 @@ wss.on("connection", async (ws, req) => {
     const currentlyOnline = onlineUsers.get(userId) || 0;
 
     onlineUsers.set(userId, currentlyOnline + 1);
+    onlineUserNames.set(userId, username);
 
     ws.send(JSON.stringify({
         type: "presence_snapshot",
-        users: [...onlineUsers.keys()]
+        users: [...onlineUsers.keys()].map((userId) => ({
+            userId,
+            username: onlineUserNames.get(userId)
+        })),
     }));
 
     console.log(`${username} connected`);
@@ -216,6 +221,7 @@ wss.on("connection", async (ws, req) => {
 
         if(currentCount <= 1){
             onlineUsers.delete(userId);
+            onlineUserNames.delete(userId);
 
             console.log("Broadcasting presence: offline", userId, username);
 
