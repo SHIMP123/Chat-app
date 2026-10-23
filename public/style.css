@@ -1361,3 +1361,43 @@ h1 {
         transition: none;
     }
 }
+
+/* Typing indicator */
+#typing-indicator {
+    min-height: 22px;
+    padding: 4px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: transparent;
+    opacity: 0;
+    transition: opacity 0.25s ease, color 0.25s ease;
+}
+
+/* Visible typing state */
+#typing-indicator.typing-active {
+    color: #8b9bb4;
+    opacity: 1;
+}
+
+/* Subtle accent on the username/status */
+#typing-indicator.typing-active::before {
+    content: "●";
+    display: inline-block;
+    margin-right: 7px;
+    color: #66d9ef;
+    font-size: 9px;
+    animation: typing-pulse 1s ease-in-out infinite;
+}
+
+/* Pulsing accent animation */
+@keyframes typing-pulse {
+    0%, 100% {
+        opacity: 0.35;
+        transform: scale(0.85);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

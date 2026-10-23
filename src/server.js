@@ -169,6 +169,18 @@ wss.on("connection", async (ws, req) => {
                 }
             }
 
+            if(data.type === "typing"){
+                for (const client of wss.clients) {
+                    if(client.readyState === 1){
+                        client.send(JSON.stringify({
+                            type: "typing",
+                            userId: userId,
+                            username: username,
+                        }));
+                    }
+                }
+            }
+
             if(data.type === "delete"){
                 const deleted = await deleteMessage(Number(data.id), userId);
 

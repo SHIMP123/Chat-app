@@ -29,12 +29,14 @@ const closeProfilePanel = document.getElementById("close-profile-panel");
 const profileMenu = document.getElementById("profile-menu");
 const onlineUsersPanel = document.getElementById("online-users-panel");
 const onlineUsersContent = document.getElementById("online-users-content");
+const typingIndicator = document.getElementById("typing-indicator");
 //IMG
 const profilePanelAvatar = document.getElementById("profile-panel-avatar");
 
 let username = "";
 let replyTo = null;
 let currentlyEditing = null;
+let typingTimer;
 
 const onlineUser = new Set();
 const onlineUserNames = new Map();
@@ -342,6 +344,16 @@ messages.addEventListener("click", (e) => {
         menu.classList.add("hide");
     }
 })
+//TYPING INDICATOR FUNCTION
+messageInput.addEventListener("input", () => {
+    if(!messageInput.value.trim()){
+        return;
+    }
+
+    ws.send(JSON.stringify({
+        type: "typing"
+    }));
+})
 //LOGOUT FUNCTION
 logoutBtn.addEventListener("click", async () => {
 
@@ -556,6 +568,20 @@ ws.onmessage = (event) => {
         })
 
         displayOnlineUsers();
+
+        return;
+    }
+
+    if(message.type === "typing"){
+        clearTimeout(typingTimer);
+
+        typingIndicator.textContent = `${message.username} is typing...`
+        typingIndicator.classList.add("typing-active");
+
+        typingTimer = setTimeout(() => {
+            typingIndicator.textContent = "";
+            typingIndicator.classList.remove("typing-active");
+        }, 2000);
 
         return;
     }
