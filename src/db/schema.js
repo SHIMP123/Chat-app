@@ -3,7 +3,8 @@ import {
     serial,
     integer,
     text,
-    timestamp
+    timestamp,
+    unique
 } from "drizzle-orm/pg-core";
 
 export const usersSchema = pgTable("users", {
@@ -14,8 +15,7 @@ export const usersSchema = pgTable("users", {
     email: text("email").notNull().unique(),
 
     passwordHash: text("password_hash").notNull()
-})
-
+});
 export const profileSchema = pgTable("profiles", {
     id: serial("id").primaryKey(),
 
@@ -39,7 +39,7 @@ export const profileSchema = pgTable("profiles", {
     updatedAt: timestamp("updated_at")
                         .notNull()
                         .defaultNow()                    
-})
+});
 export const sessionsSchema = pgTable("sessions", {
     id: serial("id").primaryKey(),
 
@@ -50,8 +50,7 @@ export const sessionsSchema = pgTable("sessions", {
     createdAt: timestamp("created_at")
                .defaultNow()
                .notNull()
-})
-
+});
 export const messageSchema = pgTable("message", {
     id: serial("id").primaryKey(),
 
@@ -63,5 +62,19 @@ export const messageSchema = pgTable("message", {
 
     replyTo: integer("reply_to").references(() => messageSchema.id),
 
-    createdAt: timestamp("created_at").defaultNow().notNull()
-});
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (table) => [{
+        uniqueMessageReader: unique("message_reads_message_reader_unique")
+            .on(table.messageId, table.readerId)
+    }]
+);
+export const messageReadsSchema = pgTable("message_reads", {
+    id: serial("id").primaryKey(),
+
+    messageId: integer("message_id").notNull().references(() => messageSchema.id),
+
+    readerId: integer("reader_id").notNull().references(() => usersSchema.id),
+
+    readAt: timestamp("read_at").notNull().defaultNow()
+})

@@ -37,15 +37,71 @@ let username = "";
 let replyTo = null;
 let currentlyEditing = null;
 let typingTimer;
+let currentUserId = null;
 
 const onlineUser = new Set();
 const onlineUserNames = new Map();
 
-//HELPER
+//HELPER FUNCTIONS
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text ?? "";
     return div.innerHTML;
+}
+function canMarkMessageAsRead(){
+    return isChatVisible();
+}
+function getVisibleMessages(){
+    if(!canMarkMessageAsRead()){
+        return [];
+    }
+
+    const messageEl = messages.querySelectorAll(".message-container");
+    const containerRect = messages.getBoundingClientRect();
+
+    return [...messageEl].filter((element) => {
+        const rect = element.getBoundingClientRect();
+
+        return (
+                rect.bottom > containerRect.top &&
+                rect.top < containerRect.bottom &&
+                rect.top < window.innerHeight && 
+                rect.bottom > 0
+            );
+    });
+}
+function getUnreadCandidateMessages(){
+    return getVisibleMessages().filter((element) => {
+        return Number(element.dataset.userId) !== Number(currentUserId);
+    });
+}
+
+//BROWSER VISIBILITY CHECKER
+function isChatVisible(){
+    return document.visibilityState === "visible";
+}
+//SEND SEEN MESSAGES
+function sendReadReceiptCandidates(){
+    if(ws.readyState !== WebSocket.OPEN){
+        return;
+    }
+
+    const visibleMessages = getUnreadCandidateMessages();
+
+    const messageIds = visibleMessages.map((element) => {
+        return Number(element.dataset.id);
+    });
+
+    if(messageIds.length === 0){
+        return;
+    }
+
+    ws.send(JSON.stringify({
+        type: "mark_read",
+        messageIds: messageIds
+    }));
+
+    console.log("Successfully sent read receipt candidates:", messageIds);
 }
 //FUNCTION TO FORMAT TIME
 function formatTimestamp(timeStamp) {
@@ -139,7 +195,7 @@ async function displayMessages(message){
             const avatarUrl = message.avatarUrl || "/imgs/default-avatar.jpg";            
 
             html = `
-            <div class="message-container" data-id="${message.id}">
+            <div class="message-container" data-id="${message.id}" data-user-id="${message.userId}">
                 <div class="message-profile-pic">
                     <img
                         class="profile-picture"
@@ -163,6 +219,7 @@ async function displayMessages(message){
                 <p class="message-content">
                     ${message.content}
                 </p>
+                <small class="read-receipt"></small>
                 <button class="options-btn">...</button>
 
                 <div class="menu-container hide">
@@ -211,6 +268,7 @@ async function loadMessages() {
             }
         });
 
+        sendReadReceiptCandidates();
 }
 //LOAD PROFILE
 async function loadProfile(){
@@ -376,6 +434,16 @@ logoutBtn.addEventListener("click", async () => {
 profileBtn.addEventListener("click", () => {
     profileMenu.classList.toggle("hide")
 })
+//BROWSER VISIBILITY CHECKER
+document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "visible"){
+        sendReadReceiptCandidates();
+    }
+})
+
+messages.addEventListener("scroll", () => {
+    sendReadReceiptCandidates();
+});
 
 customizeProfileBtn.addEventListener("click", () => {
     profileMenu.classList.add("hide");
@@ -497,18 +565,30 @@ document.getElementById("message-form").addEventListener("submit", (e) => {
     
 })
 
-ws.onmessage = (event) => {
-
-    console.log("Raw WS event:", event.data);
+ws.onmessage = async (event) => {
 
     const message = JSON.parse(event.data);
 
-    console.log("Parsed WS event:", message);
+    console.log("Recived websocket event: ", message)
 
     if(message.type === "auth_success"){
         username = message.username;
+        currentUserId = message.userId;
         console.log(`Successfully authenticated user ${username}`);
-        loadMessages();
+        await loadMessages();
+
+        console.log(
+            "Message containers:",
+            messages.querySelectorAll(".message-container").length
+        );
+
+        console.log(
+            "Messages from others:",
+            getUnreadCandidateMessages().length
+        );
+
+        console.log(getVisibleMessages().length)
+
         return;
     }
     if(message.type === "presence"){
@@ -549,14 +629,6 @@ ws.onmessage = (event) => {
             onlineUserNames.set(userId, user.username);
         });
 
-        console.log("Online user IDs:", [...onlineUser]);
-
-        console.log(
-            "Message username elements:",
-            document.querySelectorAll(".message-username[data-user-id]").length
-        );
-
-
         document.querySelectorAll(".message-username[data-user-id]"
         ).forEach((usernameEl) => {
             const userId = Number(usernameEl.dataset.userId);
@@ -586,6 +658,33 @@ ws.onmessage = (event) => {
         return;
     }
 
+    if(message.type === "read_receipt"){
+        const messageElement = document.querySelector(`.message-container[data-id="${message.messageId}"]`);
+
+        if(!messageElement){
+            console.log("Message not found in chat: ", message.messageId);
+            return;
+        }
+
+        if(Number(messageElement.dataset.userId) !== Number(currentUserId)){
+            return;
+        }
+
+        const readReceipt = messageElement.querySelector(".read-receipt");
+
+        if(readReceipt){
+            readReceipt.innerHTML = `
+                <span class="seen-check">✓✓</span>
+                Seen by ${escapeHtml(message.readerUsername)}
+            `;
+
+            readReceipt.classList.add("is-seen");
+        }
+
+        return;
+        
+    }
+
     if(message.type === "delete"){
         const messageEl = document.querySelector(`[data-id='${message.id}']`);
 
@@ -608,5 +707,4 @@ ws.onmessage = (event) => {
 
 }
 
-loadMessages();
 loadProfile();

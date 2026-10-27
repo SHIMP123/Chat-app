@@ -1,12 +1,13 @@
 import express from "express";
 import { db } from "./db/db.js";
-import { eq } from "drizzle-orm";
-import { messageSchema, profileSchema } from "./db/schema.js";
+import { and, eq, inArray, ne } from "drizzle-orm";
+import { messageReadsSchema, messageSchema, profileSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
 import { getSessionUser } from "./session.js";
 import messagesRouter from "./routes/messagesRouter.js";
 import authRouter from "./routes/auth.js"
 import profileRouter from "./routes/profileRouter.js"
+import { unique } from "drizzle-orm/gel-core";
 
 async function deleteMessage(messageId, requestUserId){
     try{
@@ -85,14 +86,18 @@ wss.on("connection", async (ws, req) => {
         return;
     }
 
-    ws.send(JSON.stringify({
-        type: "auth_success",
-        username: user.username
-    }));
-
-    let userId = user.id;
+    const userId = user.id;
 
     let username = user.username;
+
+    ws.userId = user.id;
+    ws.username = user.username;
+
+    ws.send(JSON.stringify({
+        type: "auth_success",
+        username: username,
+        userId: userId
+    }));
 
     const currentlyOnline = onlineUsers.get(userId) || 0;
 
@@ -106,11 +111,6 @@ wss.on("connection", async (ws, req) => {
             username: onlineUserNames.get(userId)
         })),
     }));
-
-    console.log(`${username} connected`);
-    console.log("Online connections: ", onlineUsers);
-
-    console.log("Broadcasting presence: online", userId, username);
 
     broadcastPresence({
                         type: "presence",
@@ -167,6 +167,65 @@ wss.on("connection", async (ws, req) => {
                         }));
                     }
                 }
+            }
+
+            if(data.type === "mark_read"){
+                const messageIds = data.messageIds;
+
+                if (
+                    !Array.isArray(messageIds) ||
+                    !messageIds.every((id) => Number.isSafeInteger(id) && id > 0)
+                ) {
+                    console.log("Invalid mark_read event received");
+                    return;
+                }
+
+                const uniqueMessageIds = [...new Set(messageIds)];
+
+                if(uniqueMessageIds.length === 0){
+                    return;
+                }
+
+                const eligibleMessages = await db.select({
+                                                            id: messageSchema.id,
+                                                            senderId: messageSchema.userId
+                                                        })
+                                                 .from(messageSchema)
+                                                 .where(
+                                                        and(
+                                                            inArray(messageSchema.id, uniqueMessageIds), 
+                                                            ne(messageSchema.userId, userId))
+                                                    );
+
+                const eligibleMessageIds = eligibleMessages.map((message) => message.id);
+
+                if(eligibleMessageIds.length === 0){
+                    return;
+                }
+                
+                await db.insert(messageReadsSchema)
+                        .values(
+                            eligibleMessageIds.map((messageId) => ({
+                                messageId,
+                                readerId: userId
+                            }))
+                        ).onConflictDoNothing();
+
+                for(const message of eligibleMessages){
+                    for(const client of wss.clients){
+                        if (client.readyState === 1 && client.userId === message.senderId){
+                            client.send(JSON.stringify({
+                                type: "read_receipt",
+                                messageId: message.id,
+                                senderId: message.senderId,
+                                readerId: userId,
+                                readerUsername: username
+                            }));
+                        }
+                    }
+                }
+
+                return;
             }
 
             if(data.type === "typing"){
