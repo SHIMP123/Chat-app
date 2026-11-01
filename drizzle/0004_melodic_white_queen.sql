@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "message_reads_message_reader_unique" ON "message_reads" USING btree ("message_id","reader_id");

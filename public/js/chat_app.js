@@ -239,11 +239,54 @@ async function displayMessages(message){
 }
 //LOAD MESSAGES FUNCTION
 async function loadMessages() {
-    const response = await fetch("/messages");
+    const token = localStorage.getItem("token");
+
+    if(!token){
+        window.location.href = "/login.html";
+        return;
+    }
+
+    const response = await fetch("/messages", {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    if(!response.ok){
+        const errorStatus = await response.tex();
+        
+        console.error("Failed to load messages: ",
+                       response.status,
+                       errorStatus
+        );
+
+        return;
+    }
 
     const data = await response.json();
 
+    console.log("First message:", data.data[0]);
+    console.log(
+        "Unread messages:",
+        data.data.filter(message => message.isRead === false)
+    );
+
+    let unreadDividerAdded = false;
+
     for(const message of data.data){
+
+        if(message.isRead === false && !unreadDividerAdded){
+            console.log("Adding unread divider before message:", message.id);
+
+            const divider = document.createElement("div");
+            divider.classList.add("unread-divider");
+            divider.innerHTML = "<span>UNREAD MESSAGES</span>";
+
+            messages.appendChild(divider);
+
+            unreadDividerAdded = true;
+        }
+
         await displayMessages({
             type: "message",
             username: message.username,
@@ -659,6 +702,7 @@ ws.onmessage = async (event) => {
     }
 
     if(message.type === "read_receipt"){
+        console.log("Received read receipt:", message);
         const messageElement = document.querySelector(`.message-container[data-id="${message.messageId}"]`);
 
         if(!messageElement){
@@ -672,6 +716,9 @@ ws.onmessage = async (event) => {
 
         const readReceipt = messageElement.querySelector(".read-receipt");
 
+        console.log("Read receipt element:", readReceipt);
+        console.log("Reader username:", message.readerUsername);
+
         if(readReceipt){
             readReceipt.innerHTML = `
                 <span class="seen-check">✓✓</span>
@@ -679,6 +726,9 @@ ws.onmessage = async (event) => {
             `;
 
             readReceipt.classList.add("is-seen");
+
+            console.log("Updated receipt HTML:", readReceipt.innerHTML);
+            console.log("Receipt classes:", readReceipt.className);
         }
 
         return;

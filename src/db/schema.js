@@ -4,7 +4,8 @@ import {
     integer,
     text,
     timestamp,
-    unique
+    unique,
+    uniqueIndex
 } from "drizzle-orm/pg-core";
 
 export const usersSchema = pgTable("users", {
@@ -77,4 +78,19 @@ export const messageReadsSchema = pgTable("message_reads", {
     readerId: integer("reader_id").notNull().references(() => usersSchema.id),
 
     readAt: timestamp("read_at").notNull().defaultNow()
+    },
+    (table) => [
+        uniqueIndex("message_reads_message_reader_unique")
+            .on(table.messageId, table.readerId)
+    ]
+);
+export const userReadPositionsSchema = pgTable("user_read_positions", {
+    id: serial("id").primaryKey(),
+
+    userId: integer("user_id").notNull().references(() => usersSchema.id).unique(),
+
+    lastReadMessageId: integer("last_message_read_id").references(() => messageSchema.id),
+
+    updatedAt: timestamp("updated_at").notNull().defaultNow()
+                    
 })

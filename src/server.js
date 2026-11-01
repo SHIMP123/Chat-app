@@ -1,7 +1,7 @@
 import express from "express";
 import { db } from "./db/db.js";
-import { and, eq, inArray, ne } from "drizzle-orm";
-import { messageReadsSchema, messageSchema, profileSchema } from "./db/schema.js";
+import { and, eq, inArray, ne, sql, asc, gt } from "drizzle-orm";
+import { messageReadsSchema, messageSchema, profileSchema, userReadPositionsSchema } from "./db/schema.js";
 import { WebSocketServer } from "ws";
 import { getSessionUser } from "./session.js";
 import messagesRouter from "./routes/messagesRouter.js";
@@ -211,9 +211,68 @@ wss.on("connection", async (ws, req) => {
                             }))
                         ).onConflictDoNothing();
 
+                const [currentPosition] = await db.select({
+                    lastReadMessageId: userReadPositionsSchema.lastReadMessageId
+                }).from(userReadPositionsSchema)
+                  .where(eq(userReadPositionsSchema.userId, userId));
+
+                const nextMessages = await db.select({
+                    id: messageSchema.id,
+                    senderId: messageSchema.userId,
+                    readId: messageReadsSchema.id
+                }).from(messageSchema)
+                .leftJoin(
+                            messageReadsSchema,
+                            and(
+                                eq(messageReadsSchema.messageId, messageSchema.id),
+                                eq(messageReadsSchema.readerId, userId)
+                            )
+                        )
+                        .where(gt(
+                            messageSchema.id,
+                            currentPosition.lastReadMessageId ?? 0
+                        ))
+                        .orderBy(asc(messageSchema.id));
+
+                let lastReadMessage = currentPosition.lastReadMessageId ?? 0;
+
+                for(const message of nextMessages){
+                    const isOwnMessage = Number(message.senderId) === Number(userId);
+                    const hasBeenRead = message.readId !== null;
+
+                    if( isOwnMessage || hasBeenRead){
+                        lastReadMessage = message.id
+                    }else{
+                        break;
+                    }
+                }
+
+                if(lastReadMessage > (currentPosition.lastReadMessageId ?? 0)){
+                    await db.insert(userReadPositionsSchema)
+                        .values({
+                            userId: userId,
+                            lastReadMessageId: lastReadMessage
+                        })
+                        .onConflictDoUpdate({
+                            target: userReadPositionsSchema.userId,
+                            set: {
+                                lastReadMessageId: sql`
+                                    GREATEST(
+                                        ${userReadPositionsSchema.lastReadMessageId},
+                                        EXCLUDED.last_message_read_id
+                                    )
+                                `,
+                                updatedAt: new Date()
+                            }
+                        });
+                }
+
+                console.log("LAST READ POSITION: ", lastReadMessage)
+
                 for(const message of eligibleMessages){
                     for(const client of wss.clients){
                         if (client.readyState === 1 && client.userId === message.senderId){
+                            console.log("Sending read receipt for:", message.id);
                             client.send(JSON.stringify({
                                 type: "read_receipt",
                                 messageId: message.id,
