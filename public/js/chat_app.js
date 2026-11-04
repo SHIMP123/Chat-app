@@ -22,6 +22,7 @@ const customizeProfileBtn = document.getElementById("customize-profile-button");
 const saveProfileBtn = document.getElementById("save-profile-button");
 const onlineUsersButton = document.getElementById("Online-users-icon");
 const closeOnlineUsersPanelButton = document.getElementById("close-online-users-panel");
+const loadOlderBtn = document.getElementById("load-older-messages");
 //DIVS
 const messages = document.getElementById("messages");
 const profilePanel = document.getElementById("profile-panel");
@@ -38,6 +39,11 @@ let replyTo = null;
 let currentlyEditing = null;
 let typingTimer;
 let currentUserId = null;
+let olderMessageId = null;
+let hasMoreMessages = true;
+let isLoadingOlderMessages = false;
+
+const MESSAGE_LIMIT = 30;
 
 const onlineUser = new Set();
 const onlineUserNames = new Map();
@@ -136,7 +142,7 @@ function formatTimestamp(timeStamp) {
     });
 }
 //DISPLAY MESSAGES FUNCTION
-async function displayMessages(message){
+async function displayMessages(message, prepend = false){
     try{
 
         let html = "";
@@ -229,9 +235,13 @@ async function displayMessages(message){
         `
         }
 
-        messages.innerHTML += html;
+        if(prepend){
+            loadOlderBtn.insertAdjacentHTML("afterend", html);
+        }else{
+            messages.insertAdjacentHTML("beforeend", html);
+            messages.scrollTop = messages.scrollHeight;
+        }
 
-        messages.scrollTop = messages.scrollHeight;
     }catch(e){
         console.error(e)
         console.error("Internal server error: ", e)
@@ -245,6 +255,10 @@ async function loadMessages() {
         window.location.href = "/login.html";
         return;
     }
+
+    olderMessageId = null;
+    hasMoreMessages = true;
+    isLoadingOlderMessages = false;
 
     const response = await fetch("/messages", {
         headers: {
@@ -264,6 +278,12 @@ async function loadMessages() {
     }
 
     const data = await response.json();
+
+    hasMoreMessages = data.hasMore;
+
+    if(data.data.length > 0){
+        olderMessageId = data.data[0].id;
+    }
 
     console.log("First message:", data.data[0]);
     console.log(
@@ -312,6 +332,65 @@ async function loadMessages() {
         });
 
         sendReadReceiptCandidates();
+}
+
+async function loadOlderMessages(){
+    if(!hasMoreMessages || isLoadingOlderMessages || ! olderMessageId){
+        return;
+    }
+
+    isLoadingOlderMessages = true;
+    loadOlderBtn.disabled = true;
+
+    try{
+        const token = localStorage.getItem("token");
+        
+        const previousScrollHeight = messages.scrollHeight;
+        const previousScrollTop = messages.scrollTop;
+
+        const response = await fetch(`/messages?before=${olderMessageId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if(!response.ok){
+            throw new Error("Failed to join other messages.");
+        }
+
+        const data = await response.json();
+
+        hasMoreMessages = data.hasMore;
+        loadOlderBtn.hidden = !hasMoreMessages;
+
+        if(data.data.length === 0){
+            hasMoreMessages = false;
+            return;
+        }
+
+        for( const message of [...data.data].reverse()){
+            await displayMessages({
+                type: "message",
+                username: message.username,
+                content: message.content,
+                userId: message.userId,
+                id: message.id,
+                replyTo: message.replyTo,
+                createdAt: message.createdAt,
+                avatarUrl: message.avatarUrl,
+                status: message.status
+            }, true);
+        }
+
+        const newScrollHeight = messages.scrollHeight;
+
+        messages.scrollTop = previousScrollTop + (newScrollHeight - previousScrollHeight)
+    } catch(e){
+        console.error("Error loading older messages: ", e);
+    }finally{
+        isLoadingOlderMessages = false;
+        loadOlderBtn.disabled = false
+    }
 }
 //LOAD PROFILE
 async function loadProfile(){
@@ -487,6 +566,8 @@ document.addEventListener("visibilitychange", () => {
 messages.addEventListener("scroll", () => {
     sendReadReceiptCandidates();
 });
+
+loadOlderBtn.addEventListener("click", loadOlderMessages);
 
 customizeProfileBtn.addEventListener("click", () => {
     profileMenu.classList.add("hide");

@@ -1459,3 +1459,28 @@ h1 {
     background: #ed4245;
     opacity: 0.7;
 }
+#load-older-messages {
+    display: block;
+    margin: 12px auto 20px;
+    padding: 9px 18px;
+
+    background: #20242c;
+    color: #cbd5e1;
+
+    border: 1px solid #343b48;
+    border-radius: 20px;
+
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+#load-older-messages:hover {
+    background: #303846;
+    border-color: #64748b;
+}
+
+#load-older-messages:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -1,5 +1,5 @@
 import { db } from "../db/db.js";
-import { eq, sql, and, asc} from "drizzle-orm";
+import { eq, sql, and, asc, desc, lt} from "drizzle-orm";
 import { messageSchema,
          usersSchema,
          profileSchema,
@@ -10,7 +10,18 @@ export async function getMessage(req, res){
     try{
         const currentUserId = req.user.userId;
 
-        const data = await db.select({
+        const limit = 30;
+        const beforeId = req.query.before ? Number(req.query.before) : null;
+
+        if( beforeId !== null && (!Number(req.query.before) || beforeId <= 0) ){
+            return res.status(400).json({
+                message: "Invalid before parameters."
+            });
+        }
+
+
+
+        let query = db.select({
             id: messageSchema.id,
             userId: messageSchema.userId,
             username: messageSchema.username,
@@ -43,10 +54,20 @@ export async function getMessage(req, res){
         .leftJoin(
             userReadPositionsSchema,
             eq(userReadPositionsSchema.userId, currentUserId)
-        )
-        .orderBy(asc(messageSchema.id));
+        );
 
-        res.json({ data });
+        if( beforeId !== null){
+            query = query.where(lt(messageSchema.id, beforeId));
+        }
+
+        const row = await query
+                        .orderBy(desc(messageSchema.id))
+                        .limit(limit + 1);
+        const hasMore = row.length > limit;
+        const data = row.slice(0, limit)
+                        .reverse();
+
+        res.json({ data, hasMore });
 
         console.table(data.map(message => ({
             id: message.id,
